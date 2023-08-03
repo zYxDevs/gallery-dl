@@ -16,18 +16,17 @@ class PostProcessor():
 
     def __init__(self, job):
         self.name = self.__class__.__name__[:-2].lower()
-        self.log = job.get_logger("postprocessor." + self.name)
+        self.log = job.get_logger(f"postprocessor.{self.name}")
 
     def __repr__(self):
         return self.__class__.__name__
 
     def _init_archive(self, job, options, prefix=None):
-        archive = options.get("archive")
-        if archive:
+        if archive := options.get("archive"):
             extr = job.extractor
             archive = util.expand_path(archive)
             if not prefix:
-                prefix = "_" + self.name.upper() + "_"
+                prefix = f"_{self.name.upper()}_"
             archive_format = (
                 options.get("archive-prefix", extr.category) +
                 options.get("archive-format", prefix + extr.archive_fmt))
@@ -36,9 +35,11 @@ class PostProcessor():
                     archive = formatter.parse(archive).format_map(
                         job.pathfmt.kwdict)
                 self.archive = util.DownloadArchive(
-                    archive, archive_format,
+                    archive,
+                    archive_format,
                     options.get("archive-pragma"),
-                    "_archive_" + self.name)
+                    f"_archive_{self.name}",
+                )
             except Exception as exc:
                 self.log.warning(
                     "Failed to open %s archive at '%s' ('%s: %s')",

@@ -51,7 +51,7 @@ class PururinGalleryExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.gallery_id = match.group(1)
-        url = "{}/gallery/{}/x".format(self.root, self.gallery_id)
+        url = f"{self.root}/gallery/{self.gallery_id}/x"
         GalleryExtractor.__init__(self, match, url)
 
         self._ext = ""

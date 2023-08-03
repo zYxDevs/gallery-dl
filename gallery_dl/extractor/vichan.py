@@ -75,7 +75,7 @@ class VichanThreadExtractor(VichanExtractor):
         self.thread = match.group(index)
 
     def items(self):
-        url = "{}/{}/res/{}.json".format(self.root, self.board, self.thread)
+        url = f"{self.root}/{self.board}/res/{self.thread}.json"
         posts = self.request(url).json()["posts"]
         title = posts[0].get("sub") or text.remove_html(posts[0]["com"])
         process = (self._process_8kun if self.category == "8kun" else
@@ -99,8 +99,7 @@ class VichanThreadExtractor(VichanExtractor):
     def _process(self, post, data):
         post.update(data)
         post["extension"] = post["ext"][1:]
-        post["url"] = "{}/{}/src/{}{}".format(
-            self.root, post["board"], post["tim"], post["ext"])
+        post["url"] = f'{self.root}/{post["board"]}/src/{post["tim"]}{post["ext"]}'
         return Message.Url, post["url"], post
 
     @staticmethod
@@ -110,11 +109,11 @@ class VichanThreadExtractor(VichanExtractor):
 
         tim = post["tim"]
         if len(tim) > 16:
-            post["url"] = "https://media.128ducks.com/file_store/{}{}".format(
-                tim, post["ext"])
+            post["url"] = f'https://media.128ducks.com/file_store/{tim}{post["ext"]}'
         else:
-            post["url"] = "https://media.128ducks.com/{}/src/{}{}".format(
-                post["board"], tim, post["ext"])
+            post[
+                "url"
+            ] = f'https://media.128ducks.com/{post["board"]}/src/{tim}{post["ext"]}'
 
         return Message.Url, post["url"], post
 
@@ -151,13 +150,12 @@ class VichanBoardExtractor(VichanExtractor):
         self.board = match.group(match.lastindex)
 
     def items(self):
-        url = "{}/{}/threads.json".format(self.root, self.board)
+        url = f"{self.root}/{self.board}/threads.json"
         threads = self.request(url).json()
 
         for page in threads:
             for thread in page["threads"]:
-                url = "{}/{}/res/{}.html".format(
-                    self.root, self.board, thread["no"])
+                url = f'{self.root}/{self.board}/res/{thread["no"]}.html'
                 thread["page"] = page["page"]
                 thread["_extractor"] = VichanThreadExtractor
                 yield Message.Queue, url, thread

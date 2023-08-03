@@ -137,13 +137,10 @@ class StringFormatter():
                 parse_field_name(fn)
                 for fn in field_name.split("|")
             ], fmt)
-        else:
-            key, funcs = parse_field_name(field_name)
-            if key in _GLOBALS:
-                return self._apply_globals(_GLOBALS[key], funcs, fmt)
-            if funcs:
-                return self._apply(key, funcs, fmt)
-            return self._apply_simple(key, fmt)
+        key, funcs = parse_field_name(field_name)
+        if key in _GLOBALS:
+            return self._apply_globals(_GLOBALS[key], funcs, fmt)
+        return self._apply(key, funcs, fmt) if funcs else self._apply_simple(key, fmt)
 
     def _apply(self, key, funcs, fmt):
         def wrap(kwdict):
@@ -194,10 +191,7 @@ class StringFormatter():
             return fmt
 
         conversion = _CONVERSIONS[conversion]
-        if fmt is self.format:
-            return conversion
-        else:
-            return lambda obj: fmt(conversion(obj))
+        return conversion if fmt is self.format else (lambda obj: fmt(conversion(obj)))
 
 
 class ExpressionFormatter():
@@ -220,7 +214,7 @@ class FStringFormatter():
     """Generate text by evaluating an f-string literal"""
 
     def __init__(self, fstring, default=NONE, fmt=None):
-        self.format_map = util.compile_expression('f"""' + fstring + '"""')
+        self.format_map = util.compile_expression(f'f"""{fstring}"""')
 
 
 class TemplateFormatter(StringFormatter):
@@ -342,9 +336,8 @@ def _parse_join(format_spec, default):
     fmt = _build_format_func(format_spec, default)
 
     def apply_join(obj):
-        if isinstance(obj, str):
-            return fmt(obj)
-        return fmt(join(obj))
+        return fmt(obj) if isinstance(obj, str) else fmt(join(obj))
+
     return apply_join
 
 

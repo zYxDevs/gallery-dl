@@ -22,7 +22,7 @@ class HotleakExtractor(Extractor):
     root = "https://hotleak.vip"
 
     def _init(self):
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         for post in self.posts():
@@ -89,8 +89,7 @@ class HotleakPostExtractor(HotleakExtractor):
         self.creator, self.type, self.id = match.groups()
 
     def posts(self):
-        url = "{}/{}/{}/{}".format(
-            self.root, self.creator, self.type, self.id)
+        url = f"{self.root}/{self.creator}/{self.type}/{self.id}"
         page = self.request(url).text
         page = text.extr(
             page, '<div class="movie-image thumb">', '</article>')
@@ -136,7 +135,7 @@ class HotleakCreatorExtractor(HotleakExtractor):
         self.creator = match.group(1)
 
     def posts(self):
-        url = "{}/{}".format(self.root, self.creator)
+        url = f"{self.root}/{self.creator}"
         return self._pagination(url)
 
     def _pagination(self, url):
@@ -164,7 +163,7 @@ class HotleakCreatorExtractor(HotleakExtractor):
 
                 if post["type"] == 0:
                     data["type"] = "photo"
-                    data["url"] = self.root + "/storage/" + post["image"]
+                    data["url"] = f"{self.root}/storage/" + post["image"]
                     text.nameext_from_url(data["url"], data)
 
                 elif post["type"] == 1:
@@ -202,7 +201,7 @@ class HotleakCategoryExtractor(HotleakExtractor):
         self._category, self.params = match.groups()
 
     def items(self):
-        url = "{}/{}".format(self.root, self._category)
+        url = f"{self.root}/{self._category}"
 
         if self._category in ("hot", "creators"):
             data = {"_extractor": HotleakCreatorExtractor}
@@ -232,5 +231,5 @@ class HotleakSearchExtractor(HotleakExtractor):
 
     def items(self):
         data = {"_extractor": HotleakCreatorExtractor}
-        for creator in self._pagination(self.root + "/search", self.params):
+        for creator in self._pagination(f"{self.root}/search", self.params):
             yield Message.Queue, creator, data

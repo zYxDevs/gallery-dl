@@ -9,6 +9,7 @@
 
 """Generate zsh completion script from gallery-dl's argument parser"""
 
+
 import util
 from gallery_dl import option
 
@@ -38,7 +39,7 @@ for action in option.build_parser()._actions:
     opt += "'[" + action.help.replace("'", '"') + "]'"
 
     if action.metavar:
-        opt += ":'<" + action.metavar.lower() + ">'"
+        opt += f":'<{action.metavar.lower()}>'"
         if action.metavar in ("FILE", "CFG", "DEST"):
             opt += ":_files"
 

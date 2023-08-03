@@ -22,8 +22,7 @@ class ComparePP(PostProcessor):
             self._compare = self._compare_size
         self._equal_exc = self._equal_cnt = 0
 
-        equal = options.get("equal")
-        if equal:
+        if equal := options.get("equal"):
             equal, _, emax = equal.partition(":")
             self._equal_max = text.parse_int(emax)
             if equal == "abort":
@@ -51,7 +50,7 @@ class ComparePP(PostProcessor):
         num = 1
         try:
             while not self._compare(pathfmt.realpath, pathfmt.temppath):
-                pathfmt.prefix = prefix = format(num) + "."
+                pathfmt.prefix = prefix = f"{format(num)}."
                 pathfmt.kwdict["extension"] = prefix + pathfmt.extension
                 pathfmt.build_path()
                 num += 1

@@ -71,7 +71,7 @@ class MangaparkChapterExtractor(MangaparkBase, ChapterExtractor):
 
     def __init__(self, match):
         self.root = text.root_from_url(match.group(0))
-        url = "{}/title/_/{}".format(self.root, match.group(1))
+        url = f"{self.root}/title/_/{match.group(1)}"
         ChapterExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -106,7 +106,7 @@ class MangaparkChapterExtractor(MangaparkBase, ChapterExtractor):
 
     def images(self, page):
         return [
-            (url + "?" + params, None)
+            (f"{url}?{params}", None)
             for url, params in zip(self._urls, self._params)
         ]
 
@@ -248,7 +248,7 @@ class MangaparkMangaExtractor(MangaparkBase, Extractor):
             "'%s' does not match any available source", source)
 
     def _request_graphql(self, opname, variables):
-        url = self.root + "/apo/"
+        url = f"{self.root}/apo/"
         data = {
             "query"        : QUERIES[opname],
             "variables"    : util.json_dumps(variables),

@@ -86,8 +86,12 @@ class ToyhouseExtractor(Extractor):
                     "_token": token,
                     "user"  : text.extract(page, 'value="', '"', pos)[0],
                 }
-                self.request(self.root + "/~account/warnings/accept",
-                             method="POST", data=data, allow_redirects=False)
+                self.request(
+                    f"{self.root}/~account/warnings/accept",
+                    method="POST",
+                    data=data,
+                    allow_redirects=False,
+                )
                 continue
 
             if cnt < 18:
@@ -123,7 +127,7 @@ class ToyhouseArtExtractor(ToyhouseExtractor):
     )
 
     def posts(self):
-        return self._pagination("/{}/art".format(self.user))
+        return self._pagination(f"/{self.user}/art")
 
     def metadata(self):
         return {"user": self.user}
@@ -169,5 +173,5 @@ class ToyhouseImageExtractor(ToyhouseExtractor):
     )
 
     def posts(self):
-        url = "{}/~images/{}".format(self.root, self.user)
+        url = f"{self.root}/~images/{self.user}"
         return (self._parse_post(self.request(url).text, '<img src="'),)

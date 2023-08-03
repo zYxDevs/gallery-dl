@@ -43,9 +43,9 @@ class VscoExtractor(Extractor):
                 base = img["responsive_url"].partition("/")[2]
                 cdn, _, path = base.partition("/")
                 if cdn.startswith("aws"):
-                    url = "https://image-{}.vsco.co/{}".format(cdn, path)
+                    url = f"https://image-{cdn}.vsco.co/{path}"
                 elif cdn.isdecimal():
-                    url = "https://image.vsco.co/" + base
+                    url = f"https://image.vsco.co/{base}"
                 else:
                     url = "https://" + img["responsive_url"]
 
@@ -72,10 +72,10 @@ class VscoExtractor(Extractor):
 
     def _pagination(self, url, params, token, key, extra=None):
         headers = {
-            "Referer"          : "{}/{}".format(self.root, self.user),
-            "Authorization"    : "Bearer " + token,
+            "Referer": f"{self.root}/{self.user}",
+            "Authorization": f"Bearer {token}",
             "X-Client-Platform": "web",
-            "X-Client-Build"   : "1",
+            "X-Client-Build": "1",
         }
 
         if extra:
@@ -90,10 +90,10 @@ class VscoExtractor(Extractor):
             if "cursor" in params:
                 for media in medias:
                     yield media[media["type"]]
-                cursor = data.get("next_cursor")
-                if not cursor:
+                if cursor := data.get("next_cursor"):
+                    params["cursor"] = cursor
+                else:
                     return
-                params["cursor"] = cursor
             else:
                 yield from medias
                 params["page"] += 1
@@ -128,12 +128,12 @@ class VscoUserExtractor(VscoExtractor):
     )
 
     def images(self):
-        url = "{}/{}/gallery".format(self.root, self.user)
+        url = f"{self.root}/{self.user}/gallery"
         data = self._extract_preload_state(url)
         tkn = data["users"]["currentUser"]["tkn"]
         sid = str(data["sites"]["siteByUsername"][self.user]["site"]["id"])
 
-        url = "{}/api/3.0/medias/profile".format(self.root)
+        url = f"{self.root}/api/3.0/medias/profile"
         params = {
             "site_id"  : sid,
             "limit"    : "14",
@@ -156,14 +156,14 @@ class VscoCollectionExtractor(VscoExtractor):
     })
 
     def images(self):
-        url = "{}/{}/collection/1".format(self.root, self.user)
+        url = f"{self.root}/{self.user}/collection/1"
         data = self._extract_preload_state(url)
 
         tkn = data["users"]["currentUser"]["tkn"]
         cid = (data["sites"]["siteByUsername"][self.user]
                ["site"]["siteCollectionId"])
 
-        url = "{}/api/2.0/collections/{}/medias".format(self.root, cid)
+        url = f"{self.root}/api/2.0/collections/{cid}/medias"
         params = {"page": 2, "size": "20"}
         return self._pagination(url, params, tkn, "medias", (
             data["medias"]["byId"][mid["id"]]["media"]
@@ -205,7 +205,7 @@ class VscoImageExtractor(VscoExtractor):
         self.media_id = match.group(2)
 
     def images(self):
-        url = "{}/{}/media/{}".format(self.root, self.user, self.media_id)
+        url = f"{self.root}/{self.user}/media/{self.media_id}"
         data = self._extract_preload_state(url)
         media = data["medias"]["byId"].popitem()[1]["media"]
         return (self._transform_media(media),)

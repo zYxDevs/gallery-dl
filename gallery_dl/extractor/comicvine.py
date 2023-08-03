@@ -47,7 +47,7 @@ class ComicvineTagExtractor(BooruExtractor):
         return {"tag": text.unquote(self.object_name)}
 
     def posts(self):
-        url = self.root + "/js/image-data.json"
+        url = f"{self.root}/js/image-data.json"
         params = {
             "images": text.extract(
                 self.request(self.root + self.path).text,

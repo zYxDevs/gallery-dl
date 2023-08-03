@@ -70,8 +70,7 @@ class PornhubGalleryExtractor(PornhubExtractor):
             yield Message.Url, url, text.nameext_from_url(url, image)
 
     def metadata(self):
-        url = "{}/album/{}".format(
-            self.root, self.gallery_id)
+        url = f"{self.root}/album/{self.gallery_id}"
         extr = text.extract_from(self.request(url).text)
 
         title = extr("<title>", "</title>")
@@ -93,8 +92,7 @@ class PornhubGalleryExtractor(PornhubExtractor):
         }
 
     def images(self):
-        url = "{}/album/show_album_json?album={}".format(
-            self.root, self.gallery_id)
+        url = f"{self.root}/album/show_album_json?album={self.gallery_id}"
         response = self.request(url)
 
         if response.content == b"Permission denied":
@@ -138,8 +136,7 @@ class PornhubUserExtractor(PornhubExtractor):
         self.type, self.user, self.cat = match.groups()
 
     def items(self):
-        url = "{}/{}/{}/photos/{}/ajax".format(
-            self.root, self.type, self.user, self.cat or "public")
+        url = f'{self.root}/{self.type}/{self.user}/photos/{self.cat or "public"}/ajax'
         params = {"page": 1}
         headers = {
             "Referer": url[:-5],
@@ -153,14 +150,12 @@ class PornhubUserExtractor(PornhubExtractor):
                 allow_redirects=False)
 
             if 300 <= response.status_code < 400:
-                url = "{}{}/photos/{}/ajax".format(
-                    self.root, response.headers["location"],
-                    self.cat or "public")
+                url = f'{self.root}{response.headers["location"]}/photos/{self.cat or "public"}/ajax'
                 continue
 
             gid = None
             for gid in text.extract_iter(response.text, 'id="albumphoto', '"'):
-                yield Message.Queue, self.root + "/album/" + gid, data
+                yield (Message.Queue, f"{self.root}/album/{gid}", data)
             if gid is None:
                 return
 

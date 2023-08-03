@@ -22,9 +22,7 @@ def remove_html(txt, repl=" ", sep=" "):
         txt = HTML_RE.sub(repl, txt)
     except TypeError:
         return ""
-    if sep:
-        return sep.join(txt.split())
-    return txt.strip()
+    return sep.join(txt.split()) if sep else txt.strip()
 
 
 def split_html(txt):
@@ -181,9 +179,11 @@ def extract_from(txt, pos=0, default=""):
 
 def parse_unicode_escapes(txt):
     """Convert JSON Unicode escapes in 'txt' into actual characters"""
-    if "\\u" in txt:
-        return re.sub(r"\\u([0-9a-fA-F]{4})", _hex_to_char, txt)
-    return txt
+    return (
+        re.sub(r"\\u([0-9a-fA-F]{4})", _hex_to_char, txt)
+        if "\\u" in txt
+        else txt
+    )
 
 
 def _hex_to_char(match):

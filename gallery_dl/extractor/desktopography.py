@@ -34,7 +34,7 @@ class DesktopographySiteExtractor(DesktopographyExtractor):
                 '<a href="https://desktopography.net/exhibition-',
                 '/">'):
 
-            url = self.root + "/exhibition-" + exhibition_year + "/"
+            url = f"{self.root}/exhibition-{exhibition_year}/"
             yield Message.Queue, url, data
 
 
@@ -49,7 +49,7 @@ class DesktopographyExhibitionExtractor(DesktopographyExtractor):
         self.year = match.group(1)
 
     def items(self):
-        url = "{}/exhibition-{}/".format(self.root, self.year)
+        url = f"{self.root}/exhibition-{self.year}/"
         base_entry_url = "https://desktopography.net/portfolios/"
         page = self.request(url).text
 
@@ -58,10 +58,7 @@ class DesktopographyExhibitionExtractor(DesktopographyExtractor):
             "year": self.year,
         }
 
-        for entry_url in text.extract_iter(
-                page,
-                '<a class="overlay-background" href="' + base_entry_url,
-                '">'):
+        for entry_url in text.extract_iter(page, f'<a class="overlay-background" href="{base_entry_url}', '">'):
 
             url = base_entry_url + entry_url
             yield Message.Queue, url, data
@@ -78,7 +75,7 @@ class DesktopographyEntryExtractor(DesktopographyExtractor):
         self.entry = match.group(1)
 
     def items(self):
-        url = "{}/portfolios/{}".format(self.root, self.entry)
+        url = f"{self.root}/portfolios/{self.entry}"
         page = self.request(url).text
 
         entry_data = {"entry": self.entry}

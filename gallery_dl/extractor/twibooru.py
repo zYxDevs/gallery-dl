@@ -169,7 +169,7 @@ class TwibooruGalleryExtractor(TwibooruExtractor):
         return {"gallery": self.api.gallery(self.gallery_id)}
 
     def posts(self):
-        gallery_id = "gallery_id:" + self.gallery_id
+        gallery_id = f"gallery_id:{self.gallery_id}"
         params = {"sd": "desc", "sf": gallery_id, "q" : gallery_id}
         return self.api.search(params)
 
@@ -185,11 +185,11 @@ class TwibooruAPI():
         self.root = "https://twibooru.org/api"
 
     def gallery(self, gallery_id):
-        endpoint = "/v3/galleries/" + gallery_id
+        endpoint = f"/v3/galleries/{gallery_id}"
         return self._call(endpoint)["gallery"]
 
     def post(self, post_id):
-        endpoint = "/v3/posts/" + post_id
+        endpoint = f"/v3/posts/{post_id}"
         return self._call(endpoint)["post"]
 
     def search(self, params):
@@ -224,8 +224,7 @@ class TwibooruAPI():
         if api_key:
             params["key"] = api_key
 
-        filter_id = extr.config("filter")
-        if filter_id:
+        if filter_id := extr.config("filter"):
             params["filter_id"] = filter_id
         elif not api_key:
             params["filter_id"] = "2"

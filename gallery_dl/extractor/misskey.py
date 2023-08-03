@@ -32,15 +32,13 @@ class MisskeyExtractor(BaseExtractor):
             if "note" in note:
                 note = note["note"]
             files = note.pop("files") or []
-            renote = note.get("renote")
-            if renote:
+            if renote := note.get("renote"):
                 if not self.renotes:
                     self.log.debug("Skipping %s (renote)", note["id"])
                     continue
                 files.extend(renote.get("files") or ())
 
-            reply = note.get("reply")
-            if reply:
+            if reply := note.get("reply"):
                 if not self.replies:
                     self.log.debug("Skipping %s (reply)", note["id"])
                     continue
@@ -124,10 +122,10 @@ class MisskeyFollowingExtractor(MisskeyExtractor):
         user_id = self.api.user_id_by_username(self.item)
         for user in self.api.users_following(user_id):
             user = user["followee"]
-            url = self.root + "/@" + user["username"]
+            url = f"{self.root}/@" + user["username"]
             host = user["host"]
             if host is not None:
-                url += "@" + host
+                url += f"@{host}"
             user["_extractor"] = MisskeyUserExtractor
             yield Message.Queue, url, user
 
@@ -215,7 +213,7 @@ class MisskeyAPI():
         return self._pagination(endpoint, data)
 
     def _call(self, endpoint, data):
-        url = self.root + "/api" + endpoint
+        url = f"{self.root}/api{endpoint}"
         return self.extractor.request(
             url, method="POST", headers=self.headers, json=data).json()
 

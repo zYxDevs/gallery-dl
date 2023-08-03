@@ -34,8 +34,7 @@ class FallenangelsChapterExtractor(ChapterExtractor):
 
     def __init__(self, match):
         self.version, self.manga, self.chapter = match.groups()
-        url = "https://{}.fascans.com/manga/{}/{}/1".format(
-            self.version, self.manga, self.chapter)
+        url = f"https://{self.version}.fascans.com/manga/{self.manga}/{self.chapter}/1"
         ChapterExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -78,7 +77,7 @@ class FallenangelsMangaExtractor(MangaExtractor):
     )
 
     def __init__(self, match):
-        url = "https://" + match.group(1)
+        url = f"https://{match.group(1)}"
         self.lang = "vi" if match.group(2) == "truyen" else "en"
         MangaExtractor.__init__(self, match, url)
 

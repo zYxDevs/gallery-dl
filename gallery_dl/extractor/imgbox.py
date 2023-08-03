@@ -23,7 +23,7 @@ class ImgboxExtractor(Extractor):
         yield Message.Directory, data
 
         for image_key in self.get_image_keys():
-            imgpage = self.request(self.root + "/" + image_key).text
+            imgpage = self.request(f"{self.root}/{image_key}").text
             imgdata = self.get_image_metadata(imgpage)
             if imgdata["filename"]:
                 imgdata.update(data)
@@ -84,7 +84,7 @@ class ImgboxGalleryExtractor(AsynchronousMixin, ImgboxExtractor):
         self.image_keys = []
 
     def get_job_metadata(self):
-        page = self.request(self.root + "/g/" + self.gallery_key).text
+        page = self.request(f"{self.root}/g/{self.gallery_key}").text
         if "The specified gallery could not be found." in page:
             raise exception.NotFoundError("gallery")
         self.image_keys = re.findall(r'<a href="/([^"]+)"><img alt="', page)

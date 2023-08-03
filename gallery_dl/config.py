@@ -180,14 +180,12 @@ def accumulate(path, key, conf=_config):
     result = []
     try:
         if key in conf:
-            value = conf[key]
-            if value:
+            if value := conf[key]:
                 result.extend(value)
         for p in path:
             conf = conf[p]
             if key in conf:
-                value = conf[key]
-                if value:
+                if value := conf[key]:
                     result[:0] = value
     except Exception:
         pass

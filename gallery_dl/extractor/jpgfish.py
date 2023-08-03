@@ -63,7 +63,7 @@ class JpgfishImageExtractor(JpgfishExtractor):
         self.path, self.image_id = match.groups()
 
     def items(self):
-        url = "{}/img/{}".format(self.root, self.path)
+        url = f"{self.root}/img/{self.path}"
         extr = text.extract_from(self.request(url).text)
 
         image = {
@@ -104,14 +104,10 @@ class JpgfishAlbumExtractor(JpgfishExtractor):
         self.album, self.sub_albums = match.groups()
 
     def items(self):
-        url = "{}/a/{}".format(self.root, self.album)
+        url = f"{self.root}/a/{self.album}"
         data = {"_extractor": JpgfishImageExtractor}
 
-        if self.sub_albums:
-            albums = self._pagination(url + "/sub")
-        else:
-            albums = (url,)
-
+        albums = self._pagination(f"{url}/sub") if self.sub_albums else (url, )
         for album in albums:
             for image in self._pagination(album):
                 yield Message.Queue, image, data
@@ -139,7 +135,7 @@ class JpgfishUserExtractor(JpgfishExtractor):
         self.user, self.albums = match.groups()
 
     def items(self):
-        url = "{}/{}".format(self.root, self.user)
+        url = f"{self.root}/{self.user}"
 
         if self.albums:
             url += "/albums"

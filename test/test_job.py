@@ -289,8 +289,7 @@ class TestDataJob(TestJob):
 
         for i in range(1, 4):
             self.assertEqual(
-                tjob.data[i][2]["_fallback"],
-                ("https://example.org/alt/{}.jpg".format(i),),
+                tjob.data[i][2]["_fallback"], (f"https://example.org/alt/{i}.jpg",)
             )
 
     def test_sleep(self):
@@ -373,14 +372,21 @@ class TestExtractor(Extractor):
         }
 
         for i in range(1, 4):
-            url = "{}/{}.jpg".format(root, i)
-            yield Message.Url, url, text.nameext_from_url(url, {
-                "num" : i,
-                "tags": ["foo", "bar", "テスト"],
-                "user": user,
-                "author": user,
-                "_fallback": ("{}/alt/{}.jpg".format(root, i),),
-            })
+            url = f"{root}/{i}.jpg"
+            yield (
+                Message.Url,
+                url,
+                text.nameext_from_url(
+                    url,
+                    {
+                        "num": i,
+                        "tags": ["foo", "bar", "テスト"],
+                        "user": user,
+                        "author": user,
+                        "_fallback": (f"{root}/alt/{i}.jpg",),
+                    },
+                ),
+            )
 
 
 class TestExtractorParent(Extractor):

@@ -28,11 +28,10 @@ class NozomiExtractor(Extractor):
 
         data = self.metadata()
         self.session.headers["Origin"] = self.root
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
         for post_id in map(str, self.posts()):
-            url = "https://j.nozomi.la/post/{}/{}/{}.json".format(
-                post_id[-1], post_id[-3:-1], post_id)
+            url = f"https://j.nozomi.la/post/{post_id[-1]}/{post_id[-3:-1]}/{post_id}.json"
             response = self.request(url, fatal=False)
 
             if response.status_code >= 400:
@@ -75,16 +74,19 @@ class NozomiExtractor(Extractor):
                     ext = "webp"
 
                 post["extension"] = ext
-                post["url"] = url = "https://{}.nozomi.la/{}/{}/{}.{}".format(
-                    subdomain, did[-1], did[-3:-1], did, ext)
+                post[
+                    "url"
+                ] = (
+                    url
+                ) = f"https://{subdomain}.nozomi.la/{did[-1]}/{did[-3:-1]}/{did}.{ext}"
                 yield Message.Url, url, post
 
     def posts(self):
-        url = "https://n.nozomi.la" + self.nozomi
+        url = f"https://n.nozomi.la{self.nozomi}"
         offset = (text.parse_int(self.pnum, 1) - 1) * 256
 
         while True:
-            headers = {"Range": "bytes={}-{}".format(offset, offset+255)}
+            headers = {"Range": f"bytes={offset}-{offset + 255}"}
             response = self.request(url, headers=headers)
             yield from decode_nozomi(response.content)
 
@@ -174,7 +176,7 @@ class NozomiIndexExtractor(NozomiExtractor):
     def __init__(self, match):
         NozomiExtractor.__init__(self, match)
         index, self.pnum = match.groups()
-        self.nozomi = "/{}.nozomi".format(index or "index")
+        self.nozomi = f'/{index or "index"}.nozomi'
 
 
 class NozomiTagExtractor(NozomiExtractor):
@@ -193,7 +195,7 @@ class NozomiTagExtractor(NozomiExtractor):
         NozomiExtractor.__init__(self, match)
         tags, self.pnum = match.groups()
         self.tags = text.unquote(tags)
-        self.nozomi = "/nozomi/{}.nozomi".format(self.tags)
+        self.nozomi = f"/nozomi/{self.tags}.nozomi"
 
     def metadata(self):
         return {"search_tags": self.tags}
@@ -222,7 +224,7 @@ class NozomiSearchExtractor(NozomiExtractor):
         negative = []
 
         def nozomi(path):
-            url = "https://j.nozomi.la/" + path + ".nozomi"
+            url = f"https://j.nozomi.la/{path}.nozomi"
             return decode_nozomi(self.request(url).content)
 
         for tag in self.tags:
@@ -230,7 +232,7 @@ class NozomiSearchExtractor(NozomiExtractor):
                 tag.replace("/", ""))
 
         for tag in positive:
-            ids = nozomi("nozomi/" + tag)
+            ids = nozomi(f"nozomi/{tag}")
             if result is None:
                 result = set(ids)
             else:
@@ -239,6 +241,6 @@ class NozomiSearchExtractor(NozomiExtractor):
         if result is None:
             result = set(nozomi("index"))
         for tag in negative:
-            result.difference_update(nozomi("nozomi/" + tag[1:]))
+            result.difference_update(nozomi(f"nozomi/{tag[1:]}"))
 
         return sorted(result, reverse=True) if result else ()

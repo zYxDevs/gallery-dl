@@ -35,7 +35,7 @@ class TapasExtractor(Extractor):
         headers = {"Accept": "application/json, text/javascript, */*;"}
 
         for episode_id in self.episode_ids():
-            url = "{}/episode/{}".format(self.root, episode_id)
+            url = f"{self.root}/episode/{episode_id}"
             data = self.request(url, headers=headers).json()["data"]
 
             episode = data["episode"]
@@ -49,7 +49,7 @@ class TapasExtractor(Extractor):
             try:
                 episode["series"] = self._cache[series_id]
             except KeyError:
-                url = "{}/series/{}".format(self.root, series_id)
+                url = f"{self.root}/series/{series_id}"
                 episode["series"] = self._cache[series_id] = self.request(
                     url, headers=headers).json()["data"]
 
@@ -61,7 +61,7 @@ class TapasExtractor(Extractor):
                     html, '<div class="viewer">', '<div class="viewer-bottom')
                 episode["num"] = 1
                 episode["extension"] = "html"
-                yield Message.Url, "text:" + content, episode
+                yield (Message.Url, f"text:{content}", episode)
 
             else:  # comic
                 for episode["num"], url in enumerate(text.extract_iter(
@@ -85,7 +85,7 @@ class TapasExtractor(Extractor):
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
 
-        url = self.root + "/account/authenticate"
+        url = f"{self.root}/account/authenticate"
         headers = {
             "Referer" : url,
         }
@@ -98,7 +98,7 @@ class TapasExtractor(Extractor):
             url, method="POST", headers=headers, data=data)
 
         if not response.history or \
-                "/account/signin_fail" in response.history[-1].url:
+                    "/account/signin_fail" in response.history[-1].url:
             raise exception.AuthenticationError()
 
         return {"_cpc_": response.history[0].cookies.get("_cpc_")}
@@ -122,12 +122,12 @@ class TapasSeriesExtractor(TapasExtractor):
         self.series_name = match.group(1)
 
     def episode_ids(self):
-        url = "{}/series/{}".format(self.root, self.series_name)
+        url = f"{self.root}/series/{self.series_name}"
         series_id, _, episode_id = text.extract(
             self.request(url).text, 'content="tapastic://series/', '"',
         )[0].partition("/episodes/")
 
-        url = "{}/series/{}/episodes".format(self.root, series_id)
+        url = f"{self.root}/series/{series_id}/episodes"
         headers = {"Accept": "application/json, text/javascript, */*;"}
         params = {
             "eid"        : episode_id,

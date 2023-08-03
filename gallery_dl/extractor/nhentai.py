@@ -43,7 +43,7 @@ class NhentaiGalleryExtractor(GalleryExtractor):
     })
 
     def __init__(self, match):
-        url = self.root + "/api/gallery/" + match.group(1)
+        url = f"{self.root}/api/gallery/{match.group(1)}"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -105,7 +105,7 @@ class NhentaiExtractor(Extractor):
     def items(self):
         data = {"_extractor": NhentaiGalleryExtractor}
         for gallery_id in self._pagination():
-            url = "{}/g/{}/".format(self.root, gallery_id)
+            url = f"{self.root}/g/{gallery_id}/"
             yield Message.Queue, url, data
 
     def _pagination(self):

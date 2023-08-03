@@ -21,7 +21,7 @@ class XhamsterExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.root = "https://" + match.group(1)
+        self.root = f"https://{match.group(1)}"
 
 
 class XhamsterGalleryExtractor(XhamsterExtractor):
@@ -164,14 +164,14 @@ class XhamsterUserExtractor(XhamsterExtractor):
         self.user = match.group(2)
 
     def items(self):
-        url = "{}/users/{}/photos".format(self.root, self.user)
+        url = f"{self.root}/users/{self.user}/photos"
         data = {"_extractor": XhamsterGalleryExtractor}
 
         while url:
             extr = text.extract_from(self.request(url).text)
             while True:
-                url = extr('thumb-image-container role-pop" href="', '"')
-                if not url:
+                if url := extr('thumb-image-container role-pop" href="', '"'):
+                    yield Message.Queue, url, data
+                else:
                     break
-                yield Message.Queue, url, data
             url = extr('data-page="next" href="', '"')

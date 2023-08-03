@@ -61,14 +61,14 @@ class Hentai2readChapterExtractor(Hentai2readBase, ChapterExtractor):
         match = re.match(r"Reading (.+) \(([^)]+)\) Hentai(?: by (.+))? - "
                          r"([^:]+): (.+) . Page 1 ", title)
         return {
-            "manga": match.group(1),
+            "manga": match[1],
             "manga_id": text.parse_int(manga_id),
             "chapter": text.parse_int(chapter),
             "chapter_minor": sep + minor,
             "chapter_id": text.parse_int(chapter_id),
-            "type": match.group(2),
-            "author": match.group(3),
-            "title": match.group(5),
+            "type": match[2],
+            "author": match[3],
+            "title": match[5],
             "lang": "en",
             "language": "English",
         }
@@ -76,7 +76,7 @@ class Hentai2readChapterExtractor(Hentai2readBase, ChapterExtractor):
     def images(self, page):
         images = text.extract(page, "'images' : ", ",\n")[0]
         return [
-            ("https://hentaicdn.com/hentai" + part, None)
+            (f"https://hentaicdn.com/hentai{part}", None)
             for part in util.json_loads(images)
         ]
 

@@ -55,8 +55,7 @@ class MetadataPP(PostProcessor):
             self._json_encode = self._make_encoder(options, 4).encode
             ext = "json"
 
-        directory = options.get("directory")
-        if directory:
+        if directory := options.get("directory"):
             self._directory = self._directory_custom
             sep = os.sep + (os.altsep or "")
             self._metadir = util.expand_path(directory).rstrip(sep) + os.sep
@@ -112,8 +111,7 @@ class MetadataPP(PostProcessor):
             archive.add(pathfmt.kwdict)
 
         if self.mtime:
-            mtime = pathfmt.kwdict.get("_mtime")
-            if mtime:
+            if mtime := pathfmt.kwdict.get("_mtime"):
                 util.set_mtime(path, mtime)
 
     def _run_stdout(self, pathfmt):

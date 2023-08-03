@@ -27,7 +27,7 @@ class VipergirlsExtractor(Extractor):
     cookies_names = ("vg_userid", "vg_password")
 
     def _init(self):
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         self.login()
@@ -52,7 +52,7 @@ class VipergirlsExtractor(Extractor):
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
 
-        url = "{}/login.php?do=login".format(self.root)
+        url = f"{self.root}/login.php?do=login"
         data = {
             "vb_login_username": username,
             "vb_login_password": password,
@@ -89,7 +89,7 @@ class VipergirlsThreadExtractor(VipergirlsExtractor):
         self.thread_id, self.page = match.groups()
 
     def posts(self):
-        url = "{}/vr.php?t={}".format(self.root, self.thread_id)
+        url = f"{self.root}/vr.php?t={self.thread_id}"
         root = ElementTree.fromstring(self.request(url).text)
         posts = root.iter("post")
 
@@ -124,6 +124,6 @@ class VipergirlsPostExtractor(VipergirlsExtractor):
         self.thread_id, self.post_id = match.groups()
 
     def posts(self):
-        url = "{}/vr.php?p={}".format(self.root, self.post_id)
+        url = f"{self.root}/vr.php?p={self.post_id}"
         root = ElementTree.fromstring(self.request(url).text)
         return root.iter("post")

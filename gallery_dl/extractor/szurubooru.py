@@ -26,16 +26,15 @@ class SzurubooruExtractor(booru.BooruExtractor):
             "Content-Type": "application/json",
         }
 
-        username = self.config("username")
-        if username:
-            token = self.config("token")
-            if token:
-                value = username + ":" + token
-                self.headers["Authorization"] = "Token " + \
-                    binascii.b2a_base64(value.encode())[:-1].decode()
+        if username := self.config("username"):
+            if token := self.config("token"):
+                value = f"{username}:{token}"
+                self.headers[
+                    "Authorization"
+                ] = f"Token {binascii.b2a_base64(value.encode())[:-1].decode()}"
 
     def _api_request(self, endpoint, params=None):
-        url = self.root + "/api" + endpoint
+        url = f"{self.root}/api{endpoint}"
         return self.request(url, headers=self.headers, params=params).json()
 
     def _pagination(self, endpoint, params):
@@ -55,7 +54,7 @@ class SzurubooruExtractor(booru.BooruExtractor):
     def _file_url(self, post):
         url = post["contentUrl"]
         if not url.startswith("http"):
-            url = self.root + "/" + url
+            url = f"{self.root}/{url}"
         return url
 
     @staticmethod
@@ -75,7 +74,7 @@ class SzurubooruExtractor(booru.BooruExtractor):
 
         post["tags"] = tags
         for category, tags in tags_categories.items():
-            post["tags_" + category] = tags
+            post[f"tags_{category}"] = tags
 
 
 BASE_PATTERN = SzurubooruExtractor.update({
@@ -140,4 +139,4 @@ class SzurubooruPostExtractor(SzurubooruExtractor):
         self.post_id = match.group(match.lastindex)
 
     def posts(self):
-        return (self._api_request("/post/" + self.post_id),)
+        return (self._api_request(f"/post/{self.post_id}"), )

@@ -83,7 +83,6 @@ class ZipPP(PostProcessor):
                 self.log.warning(
                     "Unable to write %s to %s", path, zfile.filename)
                 self.log.debug("%s: %s", exc, exc.__class__.__name__)
-                pass
             else:
                 if self.delete:
                     util.remove_file(path)

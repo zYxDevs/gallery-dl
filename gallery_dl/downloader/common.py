@@ -21,7 +21,7 @@ class DownloaderBase():
         self.session = job.extractor.session
         self.part = self.config("part", True)
         self.partdir = self.config("part-directory")
-        self.log = job.get_logger("downloader." + self.scheme)
+        self.log = job.get_logger(f"downloader.{self.scheme}")
 
         if self.partdir:
             self.partdir = util.expand_path(self.partdir)

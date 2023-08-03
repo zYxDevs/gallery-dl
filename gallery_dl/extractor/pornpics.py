@@ -25,7 +25,7 @@ class PornpicsExtractor(Extractor):
         self.item = match.group(1)
 
     def _init(self):
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         for gallery in self.galleries():
@@ -47,7 +47,7 @@ class PornpicsExtractor(Extractor):
 
         headers = {
             "Accept": "application/json, text/javascript, */*; q=0.01",
-            "Referer": url if params["offset"] else self.root + "/",
+            "Referer": url if params["offset"] else f"{self.root}/",
             "X-Requested-With": "XMLHttpRequest",
         }
 
@@ -136,7 +136,7 @@ class PornpicsTagExtractor(PornpicsExtractor):
     )
 
     def galleries(self):
-        url = "{}/tags/{}/".format(self.root, self.item)
+        url = f"{self.root}/tags/{self.item}/"
         return self._pagination(url)
 
 
@@ -166,7 +166,7 @@ class PornpicsSearchExtractor(PornpicsExtractor):
     )
 
     def galleries(self):
-        url = self.root + "/search/srch.php"
+        url = f"{self.root}/search/srch.php"
         params = {
             "q"     : self.item.replace("-", " "),
             "lang"  : "en",

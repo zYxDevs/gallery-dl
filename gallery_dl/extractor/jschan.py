@@ -45,20 +45,18 @@ class JschanThreadExtractor(JschanExtractor):
         self.thread = match.group(index)
 
     def items(self):
-        url = "{}/{}/thread/{}.json".format(
-            self.root, self.board, self.thread)
+        url = f"{self.root}/{self.board}/thread/{self.thread}.json"
         thread = self.request(url).json()
         thread["threadId"] = thread["postId"]
         posts = thread.pop("replies", ())
 
         yield Message.Directory, thread
         for post in itertools.chain((thread,), posts):
-            files = post.pop("files", ())
-            if files:
+            if files := post.pop("files", ()):
                 thread.update(post)
                 thread["count"] = len(files)
                 for num, file in enumerate(files):
-                    url = self.root + "/file/" + file["filename"]
+                    url = f"{self.root}/file/" + file["filename"]
                     file.update(thread)
                     file["num"] = num
                     file["siteFilename"] = file["filename"]
@@ -86,9 +84,8 @@ class JschanBoardExtractor(JschanExtractor):
         self.board = match.group(match.lastindex)
 
     def items(self):
-        url = "{}/{}/catalog.json".format(self.root, self.board)
+        url = f"{self.root}/{self.board}/catalog.json"
         for thread in self.request(url).json():
-            url = "{}/{}/thread/{}.html".format(
-                self.root, self.board, thread["postId"])
+            url = f'{self.root}/{self.board}/thread/{thread["postId"]}.html'
             thread["_extractor"] = JschanThreadExtractor
             yield Message.Queue, url, thread

@@ -18,8 +18,7 @@ def check_file(fname):
     if os.path.exists(path):
         return True
     warnings.warn(
-        "Not including file '{}' since it is not present. "
-        "Run 'make' to build all automatically generated files.".format(fname)
+        f"Not including file '{fname}' since it is not present. Run 'make' to build all automatically generated files."
     )
     return False
 
@@ -28,7 +27,7 @@ def check_file(fname):
 VERSION = re.search(
     r'__version__\s*=\s*"([^"]+)"',
     read("gallery_dl/version.py"),
-).group(1)
+)[1]
 
 FILES = [
     (path, [f for f in files if check_file(f)])

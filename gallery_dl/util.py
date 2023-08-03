@@ -81,10 +81,7 @@ def contains(values, elements, separator=" "):
     if not isinstance(elements, (tuple, list)):
         return elements in values
 
-    for e in elements:
-        if e in values:
-            return True
-    return False
+    return any(e in values for e in elements)
 
 
 def raises(cls):
@@ -143,8 +140,7 @@ def format_value(value, suffixes="kMGTPEZY"):
     index = value_len - 4
     if index >= 0:
         offset = (value_len - 1) % 3 + 1
-        return (value[:offset] + "." + value[offset:offset+2] +
-                suffixes[index // 3])
+        return f"{value[:offset]}.{value[offset:offset + 2]}{suffixes[index // 3]}"
     return value
 
 
@@ -267,36 +263,33 @@ Response Headers
 {response_headers}
 """
         if hide_auth:
-            authorization = req_headers.get("Authorization")
-            if authorization:
+            if authorization := req_headers.get("Authorization"):
                 atype, sep, _ = authorization.partition(" ")
-                req_headers["Authorization"] = atype + " ***" if sep else "***"
+                req_headers["Authorization"] = f"{atype} ***" if sep else "***"
 
-            cookie = req_headers.get("Cookie")
-            if cookie:
+            if cookie := req_headers.get("Cookie"):
                 req_headers["Cookie"] = ";".join(
                     c.partition("=")[0] + "=***"
                     for c in cookie.split(";")
                 )
 
-            set_cookie = res_headers.get("Set-Cookie")
-            if set_cookie:
+            if set_cookie := res_headers.get("Set-Cookie"):
                 res_headers["Set-Cookie"] = re.sub(
                     r"(^|, )([^ =]+)=[^,;]*", r"\1\2=***", set_cookie,
                 )
 
-        fp.write(outfmt.format(
-            request=request,
-            response=response,
-            request_headers="\n".join(
-                name + ": " + value
-                for name, value in req_headers.items()
-            ),
-            response_headers="\n".join(
-                name + ": " + value
-                for name, value in res_headers.items()
-            ),
-        ).encode())
+        fp.write(
+            outfmt.format(
+                request=request,
+                response=response,
+                request_headers="\n".join(
+                    f"{name}: {value}" for name, value in req_headers.items()
+                ),
+                response_headers="\n".join(
+                    f"{name}: {value}" for name, value in res_headers.items()
+                ),
+            ).encode()
+        )
 
     if content:
         if headers:
@@ -308,14 +301,11 @@ def extract_headers(response):
     headers = response.headers
     data = dict(headers)
 
-    hcd = headers.get("content-disposition")
-    if hcd:
-        name = text.extr(hcd, 'filename="', '"')
-        if name:
+    if hcd := headers.get("content-disposition"):
+        if name := text.extr(hcd, 'filename="', '"'):
             text.nameext_from_url(name, data)
 
-    hlm = headers.get("last-modified")
-    if hlm:
+    if hlm := headers.get("last-modified"):
         data["date"] = datetime.datetime(*parsedate_tz(hlm)[:6])
 
     return data
@@ -443,10 +433,9 @@ def language_to_code(lang, default=None):
     if lang is None:
         return default
     lang = lang.capitalize()
-    for code, language in CODES.items():
-        if language == lang:
-            return code
-    return default
+    return next(
+        (code for code, language in CODES.items() if language == lang), default
+    )
 
 
 CODES = {
@@ -602,7 +591,7 @@ EPOCH = datetime.datetime(1970, 1, 1)
 SECOND = datetime.timedelta(0, 1)
 WINDOWS = (os.name == "nt")
 SENTINEL = object()
-USERAGENT = "gallery-dl/" + version.__version__
+USERAGENT = f"gallery-dl/{version.__version__}"
 EXECUTABLE = getattr(sys, "frozen", False)
 SPECIAL_EXTRACTORS = {"oauth", "recursive", "test"}
 GLOBALS = {
@@ -633,23 +622,19 @@ def import_file(path):
     if not sep:
         name = ext
 
-    if path:
-        path = expand_path(path)
-        sys.path.insert(0, path)
-        try:
-            return __import__(name)
-        finally:
-            del sys.path[0]
-    else:
+    if not path:
         return __import__(name)
+    path = expand_path(path)
+    sys.path.insert(0, path)
+    try:
+        return __import__(name)
+    finally:
+        del sys.path[0]
 
 
 def build_duration_func(duration, min=0.0):
     if not duration:
-        if min:
-            return lambda: min
-        return None
-
+        return (lambda: min) if min else None
     if isinstance(duration, str):
         lower, _, upper = duration.partition("-")
         lower = float(lower)
@@ -667,8 +652,7 @@ def build_duration_func(duration, min=0.0):
             upper if upper > min else min,
         )
     else:
-        if lower < min:
-            lower = min
+        lower = max(lower, min)
         return lambda: lower
 
 
@@ -761,10 +745,7 @@ def build_predicate(predicates):
 
 
 def chain_predicates(predicates, url, kwdict):
-    for pred in predicates:
-        if not pred(url, kwdict):
-            return False
-    return True
+    return all(pred(url, kwdict) for pred in predicates)
 
 
 class RangePredicate():
@@ -789,10 +770,7 @@ class RangePredicate():
         if index > self.upper:
             raise exception.StopExtraction()
 
-        for range in self.ranges:
-            if index in range:
-                return True
-        return False
+        return any(index in range for range in self.ranges)
 
     @staticmethod
     def _parse(rangespec):
@@ -856,7 +834,7 @@ class FilterPredicate():
     def __init__(self, expr, target="image"):
         if not isinstance(expr, str):
             expr = "(" + ") and (".join(expr) + ")"
-        name = "<{} filter>".format(target)
+        name = f"<{target} filter>"
         self.expr = compile_expression(expr, name)
 
     def __call__(self, _, kwdict):
@@ -896,7 +874,7 @@ class DownloadArchive():
 
         if pragma:
             for stmt in pragma:
-                cursor.execute("PRAGMA " + stmt)
+                cursor.execute(f"PRAGMA {stmt}")
 
         try:
             cursor.execute("CREATE TABLE IF NOT EXISTS archive "

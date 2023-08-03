@@ -50,9 +50,8 @@ class CatboxAlbumExtractor(GalleryExtractor):
 
     def images(self, page):
         return [
-            ("https://files.catbox.moe/" + path, None)
-            for path in text.extract_iter(
-                page, ">https://files.catbox.moe/", "<")
+            (f"https://files.catbox.moe/{path}", None)
+            for path in text.extract_iter(page, ">https://files.catbox.moe/", "<")
         ]
 
 

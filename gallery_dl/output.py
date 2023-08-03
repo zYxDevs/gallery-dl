@@ -80,8 +80,7 @@ class LoggerAdapterActions():
         if args:
             msg = msg % args
 
-        actions = self.actions[level]
-        if actions:
+        if actions := self.actions[level]:
             args = self.extra.copy()
             args["level"] = level
 
@@ -107,8 +106,7 @@ class PathfmtProxy():
         return pathfmt.__dict__.get(name) if pathfmt else None
 
     def __str__(self):
-        pathfmt = object.__getattribute__(self, "job").pathfmt
-        if pathfmt:
+        if pathfmt := object.__getattribute__(self, "job").pathfmt:
             return pathfmt.path or pathfmt.directory
         return ""
 
@@ -186,8 +184,7 @@ def configure_logging(loglevel):
 
     # stream logging handler
     handler = root.handlers[0]
-    opts = config.interpolate(("output",), "log")
-    if opts:
+    if opts := config.interpolate(("output",), "log"):
         if isinstance(opts, str):
             opts = {"format": opts}
         if handler.level == LOG_LEVEL and "level" in opts:
@@ -197,16 +194,10 @@ def configure_logging(loglevel):
                 opts.get("format", LOG_FORMAT),
                 opts.get("format-date", LOG_FORMAT_DATE),
             ))
-        if minlevel > handler.level:
-            minlevel = handler.level
-
-    # file logging handler
-    handler = setup_logging_handler("logfile", lvl=loglevel)
-    if handler:
+        minlevel = min(minlevel, handler.level)
+    if handler := setup_logging_handler("logfile", lvl=loglevel):
         root.addHandler(handler)
-        if minlevel > handler.level:
-            minlevel = handler.level
-
+        minlevel = min(minlevel, handler.level)
     root.setLevel(minlevel)
 
 
@@ -352,8 +343,7 @@ class PipeOutput(NullOutput):
 class TerminalOutput():
 
     def __init__(self):
-        shorten = config.get(("output",), "shorten", True)
-        if shorten:
+        if shorten := config.get(("output",), "shorten", True):
             func = shorten_string_eaw if shorten == "eaw" else shorten_string
             limit = shutil.get_terminal_size().columns - OFFSET
             sep = CHAR_ELLIPSIES
@@ -362,7 +352,7 @@ class TerminalOutput():
             self.shorten = util.identity
 
     def start(self, path):
-        stdout_write_flush(self.shorten("  " + path))
+        stdout_write_flush(self.shorten(f"  {path}"))
 
     def skip(self, path):
         stdout_write(self.shorten(CHAR_SKIP + path) + "\n")
@@ -386,10 +376,8 @@ class ColorOutput(TerminalOutput):
         TerminalOutput.__init__(self)
 
         colors = config.get(("output",), "colors") or {}
-        self.color_skip = "\033[{}m".format(
-            colors.get("skip", "2"))
-        self.color_success = "\r\033[{}m".format(
-            colors.get("success", "1;32"))
+        self.color_skip = f'\033[{colors.get("skip", "2")}m'
+        self.color_success = f'\r\033[{colors.get("success", "1;32")}m'
 
     def start(self, path):
         stdout_write_flush(self.shorten(path))
@@ -417,8 +405,7 @@ class CustomOutput():
         if isinstance(fmt_success, list):
             off_success, fmt_success = fmt_success
 
-        shorten = config.get(("output",), "shorten", True)
-        if shorten:
+        if shorten := config.get(("output",), "shorten", True):
             func = shorten_string_eaw if shorten == "eaw" else shorten_string
             width = shutil.get_terminal_size().columns
 
@@ -516,12 +503,12 @@ def shorten_string_eaw(txt, limit, sep="…", cache=EAWCache()):
 if util.WINDOWS:
     ANSI = os.environ.get("TERM") == "ANSI"
     OFFSET = 1
-    CHAR_SKIP = "# "
     CHAR_SUCCESS = "* "
     CHAR_ELLIPSIES = "..."
 else:
     ANSI = True
     OFFSET = 0
-    CHAR_SKIP = "# "
     CHAR_SUCCESS = "✔ "
     CHAR_ELLIPSIES = "…"
+
+CHAR_SKIP = "# "

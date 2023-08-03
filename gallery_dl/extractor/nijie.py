@@ -26,11 +26,11 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
 
     def initialize(self):
         self.cookies_domain = "." + self.root.rpartition("/")[2]
-        self.cookies_names = (self.category + "_tok",)
+        self.cookies_names = (f"{self.category}_tok", )
 
         BaseExtractor.initialize(self)
 
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
         self.user_name = None
         if self.category == "horne":
             self._extract_data = self._extract_data_horne
@@ -40,7 +40,7 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
 
         for image_id in self.image_ids():
 
-            url = "{}/view.php?id={}".format(self.root, image_id)
+            url = f"{self.root}/view.php?id={image_id}"
             response = self.request(url, fatal=False)
             if response.status_code >= 400:
                 continue
@@ -72,17 +72,18 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
         extr = text.extract_from(page)
         keywords = text.unescape(extr(
             'name="keywords" content="', '" />')).split(",")
-        data = {
-            "title"      : keywords[0].strip(),
-            "description": text.unescape(extr(
-                '"description": "', '"').replace("&amp;", "&")),
-            "date"       : text.parse_datetime(extr(
-                '"datePublished": "', '"'), "%a %b %d %H:%M:%S %Y", 9),
-            "artist_id"  : text.parse_int(extr('/members.php?id=', '"')),
+        return {
+            "title": keywords[0].strip(),
+            "description": text.unescape(
+                extr('"description": "', '"').replace("&amp;", "&")
+            ),
+            "date": text.parse_datetime(
+                extr('"datePublished": "', '"'), "%a %b %d %H:%M:%S %Y", 9
+            ),
+            "artist_id": text.parse_int(extr('/members.php?id=', '"')),
             "artist_name": keywords[1],
-            "tags"       : keywords[2:-1],
+            "tags": keywords[2:-1],
         }
-        return data
 
     @staticmethod
     def _extract_data_horne(page):
@@ -90,18 +91,20 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
         extr = text.extract_from(page)
         keywords = text.unescape(extr(
             'name="keywords" content="', '" />')).split(",")
-        data = {
-            "title"      : keywords[0].strip(),
-            "description": text.unescape(extr(
-                'property="og:description" content="', '"')),
-            "artist_id"  : text.parse_int(extr('members.php?id=', '"')),
+        return {
+            "title": keywords[0].strip(),
+            "description": text.unescape(
+                extr('property="og:description" content="', '"')
+            ),
+            "artist_id": text.parse_int(extr('members.php?id=', '"')),
             "artist_name": keywords[1],
-            "tags"       : keywords[2:-1],
-            "date"       : text.parse_datetime(extr(
-                "itemprop='datePublished' content=", "<").rpartition(">")[2],
-                "%Y-%m-%d %H:%M:%S", 9),
+            "tags": keywords[2:-1],
+            "date": text.parse_datetime(
+                extr("itemprop='datePublished' content=", "<").rpartition(">")[2],
+                "%Y-%m-%d %H:%M:%S",
+                9,
+            ),
         }
-        return data
 
     @staticmethod
     def _extract_images(page):
@@ -111,7 +114,7 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
             src = text.extr(image, 'src="', '"')
             if not src:
                 continue
-            url = ("https:" + src).replace("/__rs_l120x120/", "/")
+            url = f"https:{src}".replace("/__rs_l120x120/", "/")
             yield text.nameext_from_url(url, {
                 "num": num,
                 "url": url,
@@ -135,7 +138,7 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
                 "Username and password required")
 
         self.log.info("Logging in as %s", username)
-        url = "{}/login_int.php".format(self.root)
+        url = f"{self.root}/login_int.php"
         data = {"email": username, "password": password, "save": "on"}
 
         response = self.request(url, method="POST", data=data)
@@ -144,7 +147,7 @@ class NijieExtractor(AsynchronousMixin, BaseExtractor):
         return self.cookies
 
     def _pagination(self, path):
-        url = "{}/{}.php".format(self.root, path)
+        url = f"{self.root}/{path}.php"
         params = {"id": self.user_id, "p": 1}
 
         while True:
@@ -362,7 +365,7 @@ class NijiefollowedExtractor(NijieExtractor):
     def items(self):
         self.login()
 
-        url = self.root + "/like_my.php"
+        url = f"{self.root}/like_my.php"
         params = {"p": 1}
         data = {"_extractor": NijieUserExtractor}
 
@@ -371,7 +374,7 @@ class NijiefollowedExtractor(NijieExtractor):
 
             for user_id in text.extract_iter(
                     page, '"><a href="/members.php?id=', '"'):
-                user_url = "{}/members.php?id={}".format(self.root, user_id)
+                user_url = f"{self.root}/members.php?id={user_id}"
                 yield Message.Queue, user_url, data
 
             if '<a rel="next"' not in page:

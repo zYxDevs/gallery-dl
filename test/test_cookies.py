@@ -159,7 +159,7 @@ class TestCookieUtils(unittest.TestCase):
         extr.cookies.set("a", "1", domain=extr.cookies_domain)
         self.assertTrue(extr.cookies_check(("a",)))
 
-        extr.cookies.set("a", "1", domain="www" + extr.cookies_domain)
+        extr.cookies.set("a", "1", domain=f"www{extr.cookies_domain}")
         self.assertEqual(len(extr.cookies), 3)
         self.assertTrue(extr.cookies_check(("a",)))
 

@@ -23,8 +23,7 @@ class Test_CommandlineArguments(unittest.TestCase):
         try:
             cls.module = __import__(cls.module_name)
         except ImportError:
-            raise unittest.SkipTest("cannot import module '{}'".format(
-                cls.module_name))
+            raise unittest.SkipTest(f"cannot import module '{cls.module_name}'")
         cls.default = ytdl.parse_command_line(cls.module, [])
 
     def test_ignore_errors(self):

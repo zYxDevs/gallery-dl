@@ -193,8 +193,7 @@ modules = [
 def find(url):
     """Find a suitable extractor for the given URL"""
     for cls in _list_classes():
-        match = cls.pattern.match(url)
-        if match:
+        if match := cls.pattern.match(url):
             return cls(match)
     return None
 

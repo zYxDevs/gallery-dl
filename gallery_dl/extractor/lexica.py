@@ -70,10 +70,10 @@ class LexicaSearchExtractor(Extractor):
             yield Message.Url, base + image["id"], image
 
     def posts(self):
-        url = self.root + "/api/infinite-prompts"
+        url = f"{self.root}/api/infinite-prompts"
         headers = {
-            "Accept" : "application/json, text/plain, */*",
-            "Referer": "{}/?q={}".format(self.root, self.query),
+            "Accept": "application/json, text/plain, */*",
+            "Referer": f"{self.root}/?q={self.query}",
         }
         json = {
             "text"      : self.text,
@@ -97,8 +97,7 @@ class LexicaSearchExtractor(Extractor):
                 del image["promptid"]
                 yield image
 
-            cursor = data.get("nextCursor")
-            if not cursor:
+            if cursor := data.get("nextCursor"):
+                json["cursor"] = cursor
+            else:
                 return
-
-            json["cursor"] = cursor

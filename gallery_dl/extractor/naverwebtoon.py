@@ -79,7 +79,7 @@ class NaverwebtoonEpisodeExtractor(NaverwebtoonBase, GalleryExtractor):
 
     def __init__(self, match):
         path, query = match.groups()
-        url = "{}/{}/detail?{}".format(self.root, path, query)
+        url = f"{self.root}/{path}/detail?{query}"
         GalleryExtractor.__init__(self, match, url)
 
         query = text.parse_query(query)
@@ -139,13 +139,12 @@ class NaverwebtoonComicExtractor(NaverwebtoonBase, Extractor):
         self.sort = query.get("sort", "ASC")
 
     def items(self):
-        base = "{}/{}/detail?titleId={}&no=".format(
-            self.root, self.path, self.title_id)
+        base = f"{self.root}/{self.path}/detail?titleId={self.title_id}&no="
 
-        url = self.root + "/api/article/list"
+        url = f"{self.root}/api/article/list"
         headers = {
             "Accept": "application/json, text/plain, */*",
-            "Referer": self.root + "/",
+            "Referer": f"{self.root}/",
         }
         params = {
             "titleId": self.title_id,

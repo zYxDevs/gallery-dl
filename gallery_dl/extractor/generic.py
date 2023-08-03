@@ -110,9 +110,7 @@ class GenericExtractor(Extractor):
 
     def metadata(self, page):
         """Extract generic webpage metadata, return them in a dict."""
-        data = {}
-        data['pageurl'] = self.url
-        data['title'] = text.extr(page, '<title>', "</title>")
+        data = {'pageurl': self.url, 'title': text.extr(page, '<title>', "</title>")}
         data['description'] = text.extr(
             page, '<meta name="description" content="', '"')
         data['keywords'] = text.extr(
@@ -193,22 +191,14 @@ class GenericExtractor(Extractor):
         imageurls_ext = re.findall(imageurl_pattern_ext, page)
         imageurls = imageurls_src + imageurls_ext
 
-        # Resolve relative urls
-        #
-        # Image urls catched so far may be relative, so we must resolve them
-        # by prepending a suitable base url.
-        #
-        # If the page contains a <base> element, use it as base url
-        basematch = re.search(
-            r"(?i)(?:<base\s.*?href=[\"']?)(?P<url>[^\"' >]+)", page)
-        if basematch:
-            self.baseurl = basematch.group('url').rstrip('/')
-        # Otherwise, extract the base url from self.url
+        if basematch := re.search(
+            r"(?i)(?:<base\s.*?href=[\"']?)(?P<url>[^\"' >]+)", page
+        ):
+            self.baseurl = basematch['url'].rstrip('/')
+        elif self.url.endswith("/"):
+            self.baseurl = self.url.rstrip('/')
         else:
-            if self.url.endswith("/"):
-                self.baseurl = self.url.rstrip('/')
-            else:
-                self.baseurl = os.path.dirname(self.url)
+            self.baseurl = os.path.dirname(self.url)
 
         # Build the list of absolute image urls
         absimageurls = []
@@ -216,21 +206,14 @@ class GenericExtractor(Extractor):
             # Absolute urls are taken as-is
             if u.startswith('http'):
                 absimageurls.append(u)
-            # // relative urls are prefixed with current scheme
             elif u.startswith('//'):
                 absimageurls.append(self.scheme + u.lstrip('/'))
-            # / relative urls are prefixed with current scheme+domain
             elif u.startswith('/'):
                 absimageurls.append(self.root + u)
-            # other relative urls are prefixed with baseurl
             else:
-                absimageurls.append(self.baseurl + '/' + u)
+                absimageurls.append(f'{self.baseurl}/{u}')
 
         # Remove duplicates
         absimageurls = dict.fromkeys(absimageurls)
 
-        # Create the image metadata dict and add imageurl to it
-        # (image filename and extension are added by items())
-        images = [(u, {'imageurl': u}) for u in absimageurls]
-
-        return images
+        return [(u, {'imageurl': u}) for u in absimageurls]

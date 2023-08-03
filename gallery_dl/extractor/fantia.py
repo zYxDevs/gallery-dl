@@ -26,12 +26,12 @@ class FantiaExtractor(Extractor):
             "X-Requested-With": "XMLHttpRequest",
         }
         _empty_plan = {
-            "id"   : 0,
+            "id": 0,
             "price": 0,
             "limit": 0,
-            "name" : "",
+            "name": "",
             "description": "",
-            "thumb": self.root + "/images/fallback/plan/thumb_default.png",
+            "thumb": f"{self.root}/images/fallback/plan/thumb_default.png",
         }
 
         if self._warning:
@@ -77,38 +77,38 @@ class FantiaExtractor(Extractor):
             self._csrf_token(page)
 
             post_id = None
-            for post_id in text.extract_iter(
-                    page, 'class="link-block" href="/posts/', '"'):
-                yield post_id
-
+            yield from text.extract_iter(
+                page, 'class="link-block" href="/posts/', '"'
+            )
             if not post_id:
                 return
             params["page"] += 1
 
     def _csrf_token(self, page=None):
         if not page:
-            page = self.request(self.root + "/").text
+            page = self.request(f"{self.root}/").text
         self.headers["X-CSRF-Token"] = text.extr(
             page, 'name="csrf-token" content="', '"')
 
     def _get_post_data(self, post_id):
         """Fetch and process post data"""
-        url = self.root+"/api/v1/posts/"+post_id
+        url = f"{self.root}/api/v1/posts/{post_id}"
         resp = self.request(url, headers=self.headers).json()["post"]
         return {
             "post_id": resp["id"],
-            "post_url": self.root + "/posts/" + str(resp["id"]),
+            "post_url": f"{self.root}/posts/" + str(resp["id"]),
             "post_title": resp["title"],
             "comment": resp["comment"],
             "rating": resp["rating"],
             "posted_at": resp["posted_at"],
             "date": text.parse_datetime(
-                resp["posted_at"], "%a, %d %b %Y %H:%M:%S %z"),
+                resp["posted_at"], "%a, %d %b %Y %H:%M:%S %z"
+            ),
             "fanclub_id": resp["fanclub"]["id"],
             "fanclub_user_id": resp["fanclub"]["user"]["id"],
             "fanclub_user_name": resp["fanclub"]["user"]["name"],
             "fanclub_name": resp["fanclub"]["name"],
-            "fanclub_url": self.root+"/fanclubs/"+str(resp["fanclub"]["id"]),
+            "fanclub_url": f"{self.root}/fanclubs/" + str(resp["fanclub"]["id"]),
             "tags": resp["tags"],
             "_data": resp,
         }
@@ -191,7 +191,7 @@ class FantiaCreatorExtractor(FantiaExtractor):
         self.creator_id = match.group(1)
 
     def posts(self):
-        url = "{}/fanclubs/{}/posts".format(self.root, self.creator_id)
+        url = f"{self.root}/fanclubs/{self.creator_id}/posts"
         return self._pagination(url)
 
 

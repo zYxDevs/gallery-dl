@@ -58,44 +58,38 @@ class PatreonExtractor(Extractor):
 
     @staticmethod
     def _postfile(post):
-        postfile = post.get("post_file")
-        if postfile:
+        if postfile := post.get("post_file"):
             return (("postfile", postfile["url"], postfile["name"]),)
         return ()
 
     def _images(self, post):
         for image in post["images"]:
-            url = image.get("download_url")
-            if url:
+            if url := image.get("download_url"):
                 name = image.get("file_name") or self._filename(url) or url
                 yield "image", url, name
 
     def _image_large(self, post):
-        image = post.get("image")
-        if image:
-            url = image.get("large_url")
-            if url:
+        if image := post.get("image"):
+            if url := image.get("large_url"):
                 name = image.get("file_name") or self._filename(url) or url
                 return (("image_large", url, name),)
         return ()
 
     def _attachments(self, post):
         for attachment in post["attachments"]:
-            url = self.request(
-                attachment["url"], method="HEAD",
-                allow_redirects=False, fatal=False,
-            ).headers.get("Location")
-
-            if url:
+            if url := self.request(
+                attachment["url"],
+                method="HEAD",
+                allow_redirects=False,
+                fatal=False,
+            ).headers.get("Location"):
                 yield "attachment", url, attachment["name"]
 
     def _content(self, post):
-        content = post.get("content")
-        if content:
+        if content := post.get("content"):
             for img in text.extract_iter(
                     content, '<img data-media-id="', '>'):
-                url = text.extr(img, 'src="', '"')
-                if url:
+                if url := text.extr(img, 'src="', '"'):
                     yield "content", url, self._filename(url) or url
 
     def posts(self):
@@ -103,7 +97,7 @@ class PatreonExtractor(Extractor):
 
     def _pagination(self, url):
         headers = {
-            "Referer"     : self.root + "/",
+            "Referer": f"{self.root}/",
             "Content-Type": "application/vnd.api+json",
         }
 
@@ -191,48 +185,42 @@ class PatreonExtractor(Extractor):
         parts = url.partition("?")[0].split("/")
         parts.reverse()
 
-        for part in parts:
-            if len(part) == 32:
-                return part
-        return ""
+        return next((part for part in parts if len(part) == 32), "")
 
     @staticmethod
     def _build_url(endpoint, query):
         return (
-            "https://www.patreon.com/api/" + endpoint +
-
-            "?include=campaign,access_rules,attachments,audio,images,media,"
-            "native_video_insights,poll.choices,"
-            "poll.current_user_responses.user,"
-            "poll.current_user_responses.choice,"
-            "poll.current_user_responses.poll,"
-            "user,user_defined_tags,ti_checks"
-
-            "&fields[campaign]=currency,show_audio_post_download_links,"
-            "avatar_photo_url,avatar_photo_image_urls,earnings_visibility,"
-            "is_nsfw,is_monthly,name,url"
-
-            "&fields[post]=change_visibility_at,comment_count,commenter_count,"
-            "content,current_user_can_comment,current_user_can_delete,"
-            "current_user_can_view,current_user_has_liked,embed,image,"
-            "insights_last_updated_at,is_paid,like_count,meta_image_url,"
-            "min_cents_pledged_to_view,post_file,post_metadata,published_at,"
-            "patreon_url,post_type,pledge_url,preview_asset_type,thumbnail,"
-            "thumbnail_url,teaser_text,title,upgrade_url,url,"
-            "was_posted_by_campaign_owner,has_ti_violation,moderation_status,"
-            "post_level_suspension_removal_date,pls_one_liners_by_category,"
-            "video_preview,view_count"
-
-            "&fields[post_tag]=tag_type,value"
-            "&fields[user]=image_url,full_name,url"
-            "&fields[access_rule]=access_rule_type,amount_cents"
-            "&fields[media]=id,image_urls,download_url,metadata,file_name"
-            "&fields[native_video_insights]=average_view_duration,"
-            "average_view_pct,has_preview,id,last_updated_at,num_views,"
-            "preview_views,video_duration" + query +
-
-            "&json-api-version=1.0"
-        )
+            (
+                f"https://www.patreon.com/api/{endpoint}"
+                + "?include=campaign,access_rules,attachments,audio,images,media,"
+                "native_video_insights,poll.choices,"
+                "poll.current_user_responses.user,"
+                "poll.current_user_responses.choice,"
+                "poll.current_user_responses.poll,"
+                "user,user_defined_tags,ti_checks"
+                "&fields[campaign]=currency,show_audio_post_download_links,"
+                "avatar_photo_url,avatar_photo_image_urls,earnings_visibility,"
+                "is_nsfw,is_monthly,name,url"
+                "&fields[post]=change_visibility_at,comment_count,commenter_count,"
+                "content,current_user_can_comment,current_user_can_delete,"
+                "current_user_can_view,current_user_has_liked,embed,image,"
+                "insights_last_updated_at,is_paid,like_count,meta_image_url,"
+                "min_cents_pledged_to_view,post_file,post_metadata,published_at,"
+                "patreon_url,post_type,pledge_url,preview_asset_type,thumbnail,"
+                "thumbnail_url,teaser_text,title,upgrade_url,url,"
+                "was_posted_by_campaign_owner,has_ti_violation,moderation_status,"
+                "post_level_suspension_removal_date,pls_one_liners_by_category,"
+                "video_preview,view_count"
+                "&fields[post_tag]=tag_type,value"
+                "&fields[user]=image_url,full_name,url"
+                "&fields[access_rule]=access_rule_type,amount_cents"
+                "&fields[media]=id,image_urls,download_url,metadata,file_name"
+                "&fields[native_video_insights]=average_view_duration,"
+                "average_view_pct,has_preview,id,last_updated_at,num_views,"
+                "preview_views,video_duration"
+            )
+            + query
+        ) + "&json-api-version=1.0"
 
     def _build_file_generators(self, filetypes):
         if filetypes is None:
@@ -296,11 +284,10 @@ class PatreonCreatorExtractor(PatreonExtractor):
     def posts(self):
         query = text.parse_query(self.query)
 
-        creator_id = query.get("u")
-        if creator_id:
-            url = "{}/user/posts?u={}".format(self.root, creator_id)
+        if creator_id := query.get("u"):
+            url = f"{self.root}/user/posts?u={creator_id}"
         else:
-            url = "{}/{}/posts".format(self.root, self.creator)
+            url = f"{self.root}/{self.creator}/posts"
         page = self.request(url, notfound="creator").text
 
         try:
@@ -310,17 +297,16 @@ class PatreonCreatorExtractor(PatreonExtractor):
             raise exception.NotFoundError("creator")
 
         filters = "".join(
-            "&filter[{}={}".format(key[8:], text.escape(value))
+            f"&filter[{key[8:]}={text.escape(value)}"
             for key, value in query.items()
             if key.startswith("filters[")
         )
 
-        url = self._build_url("posts", (
-            "&filter[campaign_id]=" + campaign_id +
-            "&filter[contains_exclusive_posts]=true"
-            "&filter[is_draft]=false" + filters +
-            "&sort=" + query.get("sort", "-published_at")
-        ))
+        url = self._build_url(
+            "posts",
+            f"&filter[campaign_id]={campaign_id}&filter[contains_exclusive_posts]=true&filter[is_draft]=false{filters}&sort="
+            + query.get("sort", "-published_at"),
+        )
         return self._pagination(url)
 
 
@@ -367,7 +353,7 @@ class PatreonPostExtractor(PatreonExtractor):
         self.slug = match.group(1)
 
     def posts(self):
-        url = "{}/posts/{}".format(self.root, self.slug)
+        url = f"{self.root}/posts/{self.slug}"
         page = self.request(url, notfound="post").text
         post = self._extract_bootstrap(page)["post"]
 

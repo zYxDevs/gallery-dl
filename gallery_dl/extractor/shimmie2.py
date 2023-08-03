@@ -24,13 +24,11 @@ class Shimmie2Extractor(BaseExtractor):
         except KeyError:
             return
 
-        cookies = instance.get("cookies")
-        if cookies:
+        if cookies := instance.get("cookies"):
             domain = self.root.rpartition("/")[2]
             self.cookies_update_dict(cookies, domain=domain)
 
-        file_url = instance.get("file_url")
-        if file_url:
+        if file_url := instance.get("file_url"):
             self.file_url_fmt = file_url
 
     def items(self):
@@ -142,7 +140,7 @@ class Shimmie2TagExtractor(Shimmie2Extractor):
         mime = ""
 
         while True:
-            url = "{}/post/list/{}/{}".format(self.root, self.tags, pnum)
+            url = f"{self.root}/post/list/{self.tags}/{pnum}"
             page = self.request(url).text
             extr = text.extract_from(page)
 
@@ -180,7 +178,7 @@ class Shimmie2TagExtractor(Shimmie2Extractor):
 
             pnum += 1
             if not extr(">Next<", ">"):
-                if not extr("/{}'>{}<".format(pnum, pnum), ">"):
+                if not extr(f"/{pnum}'>{pnum}<", ">"):
                     return
 
 
@@ -303,7 +301,7 @@ class Shimmie2PostExtractor(Shimmie2Extractor):
         self.post_id = match.group(match.lastindex)
 
     def posts(self):
-        url = "{}/post/view/{}".format(self.root, self.post_id)
+        url = f"{self.root}/post/view/{self.post_id}"
         extr = text.extract_from(self.request(url).text)
 
         post = {

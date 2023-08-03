@@ -89,7 +89,7 @@ class TestPredicate(unittest.TestCase):
         dummy = None
 
         pred = util.RangePredicate(" - 3 , 4-  4, 2-6")
-        for i in range(6):
+        for _ in range(6):
             self.assertTrue(pred(dummy, dummy))
         with self.assertRaises(exception.StopExtraction):
             pred(dummy, dummy)
@@ -464,7 +464,7 @@ class TestOther(unittest.TestCase):
         self.assertIs(module, datetime)
 
         with tempfile.TemporaryDirectory() as path:
-            file = path + "/module_test.py"
+            file = f"{path}/module_test.py"
             with open(file, "w") as fp:
                 fp.write("""
 import datetime
@@ -489,7 +489,7 @@ value = 123
         self.assertEqual(expr(value), result)
 
         with tempfile.TemporaryDirectory() as path:
-            file = path + "/module_sha1.py"
+            file = f"{path}/module_sha1.py"
             with open(file, "w") as fp:
                 fp.write("""
 import hashlib
@@ -670,8 +670,7 @@ def hash(value):
         result = [(3, 33), (2, 22), (1, 11)]
 
         def gen():
-            for i in seq:
-                yield i
+            yield from seq
 
         def gen_2():
             yield from seq
@@ -751,9 +750,7 @@ def hash(value):
         self.assertIs(obj(1, "a"), obj)
         self.assertIs(obj(foo="bar"), obj)
 
-        i = 0
-        for _ in obj:
-            i += 1
+        i = sum(1 for _ in obj)
         self.assertEqual(i, 0)
 
 

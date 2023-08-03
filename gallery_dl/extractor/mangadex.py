@@ -42,7 +42,7 @@ class MangadexExtractor(Extractor):
             data = self._transform(chapter)
             data["_extractor"] = MangadexChapterExtractor
             self._cache[uuid] = data
-            yield Message.Queue, self.root + "/chapter/" + uuid, data
+            yield (Message.Queue, f"{self.root}/chapter/{uuid}", data)
 
     def _transform(self, chapter):
         relationships = defaultdict(list)
@@ -135,7 +135,7 @@ class MangadexChapterExtractor(MangadexExtractor):
 
         server = self.api.athome_server(self.uuid)
         chapter = server["chapter"]
-        base = "{}/data/{}/".format(server["baseUrl"], chapter["hash"])
+        base = f'{server["baseUrl"]}/data/{chapter["hash"]}/'
 
         enum = util.enumerate_reversed if self.config(
             "page-reverse") else enumerate
@@ -224,16 +224,16 @@ class MangadexAPI():
                      else text.ensure_http_scheme(server).rstrip("/"))
 
     def athome_server(self, uuid):
-        return self._call("/at-home/server/" + uuid)
+        return self._call(f"/at-home/server/{uuid}")
 
     def chapter(self, uuid):
         params = {"includes[]": ("scanlation_group",)}
-        return self._call("/chapter/" + uuid, params)["data"]
+        return self._call(f"/chapter/{uuid}", params)["data"]
 
     @memcache(keyarg=1)
     def manga(self, uuid):
         params = {"includes[]": ("artist", "author")}
-        return self._call("/manga/" + uuid, params)["data"]
+        return self._call(f"/manga/{uuid}", params)["data"]
 
     def manga_feed(self, uuid):
         order = "desc" if self.extractor.config("chapter-reverse") else "asc"
@@ -241,7 +241,7 @@ class MangadexAPI():
             "order[volume]" : order,
             "order[chapter]": order,
         }
-        return self._pagination("/manga/" + uuid + "/feed", params)
+        return self._pagination(f"/manga/{uuid}/feed", params)
 
     def user_follows_manga_feed(self):
         params = {"order[publishAt]": "desc"}
@@ -256,11 +256,11 @@ class MangadexAPI():
         refresh_token = _refresh_token_cache(username)
         if refresh_token:
             self.extractor.log.info("Refreshing access token")
-            url = self.root + "/auth/refresh"
+            url = f"{self.root}/auth/refresh"
             data = {"token": refresh_token}
         else:
             self.extractor.log.info("Logging in as %s", username)
-            url = self.root + "/auth/login"
+            url = f"{self.root}/auth/login"
             data = {"username": username, "password": password}
 
         data = self.extractor.request(
@@ -310,8 +310,7 @@ class MangadexAPI():
         params["includes[]"] = ("scanlation_group",)
         params["offset"] = 0
 
-        api_params = config("api-parameters")
-        if api_params:
+        if api_params := config("api-parameters"):
             params.update(api_params)
 
         while True:

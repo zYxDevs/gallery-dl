@@ -27,8 +27,7 @@ class MoebooruExtractor(BooruExtractor):
         post["date"] = text.parse_timestamp(post["created_at"])
 
     def _html(self, post):
-        return self.request("{}/post/show/{}".format(
-            self.root, post["id"])).text
+        return self.request(f'{self.root}/post/show/{post["id"]}').text
 
     def _tags(self, post, page):
         tag_container = text.extr(page, '<ul id="tag-', '</ul>')
@@ -40,7 +39,7 @@ class MoebooruExtractor(BooruExtractor):
         for tag_type, tag_name in pattern.findall(tag_container):
             tags[tag_type].append(text.unquote(tag_name))
         for key, value in tags.items():
-            post["tags_" + key] = " ".join(value)
+            post[f"tags_{key}"] = " ".join(value)
 
     def _notes(self, post, page):
         note_container = text.extr(page, 'id="note-container"', "<img ")
@@ -158,8 +157,8 @@ class MoebooruPostExtractor(MoebooruExtractor):
         self.post_id = match.group(match.lastindex)
 
     def posts(self):
-        params = {"tags": "id:" + self.post_id}
-        return self.request(self.root + "/post.json", params=params).json()
+        params = {"tags": f"id:{self.post_id}"}
+        return self.request(f"{self.root}/post.json", params=params).json()
 
 
 class MoebooruTagExtractor(MoebooruExtractor):
@@ -191,7 +190,7 @@ class MoebooruTagExtractor(MoebooruExtractor):
 
     def posts(self):
         params = {"tags": self.tags}
-        return self._pagination(self.root + "/post.json", params)
+        return self._pagination(f"{self.root}/post.json", params)
 
 
 class MoebooruPoolExtractor(MoebooruExtractor):
@@ -219,8 +218,8 @@ class MoebooruPoolExtractor(MoebooruExtractor):
         return {"pool": text.parse_int(self.pool_id)}
 
     def posts(self):
-        params = {"tags": "pool:" + self.pool_id}
-        return self._pagination(self.root + "/post.json", params)
+        params = {"tags": f"pool:{self.pool_id}"}
+        return self._pagination(f"{self.root}/post.json", params)
 
 
 class MoebooruPopularExtractor(MoebooruExtractor):
@@ -272,5 +271,5 @@ class MoebooruPopularExtractor(MoebooruExtractor):
         return {"date": date, "scale": scale}
 
     def posts(self):
-        url = "{}/post/popular_{}.json".format(self.root, self.scale)
+        url = f"{self.root}/post/popular_{self.scale}.json"
         return self.request(url, params=self.params).json()

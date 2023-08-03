@@ -23,7 +23,7 @@ class SlickpicExtractor(Extractor):
     def __init__(self, match):
         Extractor.__init__(self, match)
         self.user = match.group(1)
-        self.root = "https://{}.slickpic.com".format(self.user)
+        self.root = f"https://{self.user}.slickpic.com"
 
 
 class SlickpicAlbumExtractor(SlickpicExtractor):
@@ -88,7 +88,7 @@ class SlickpicAlbumExtractor(SlickpicExtractor):
             yield Message.Url, url, img
 
     def metadata(self):
-        url = "{}/albums/{}/?wallpaper".format(self.root, self.album)
+        url = f"{self.root}/albums/{self.album}/?wallpaper"
         extr = text.extract_from(self.request(url).text)
 
         title = text.unescape(extr("<title>", "</title>"))
@@ -104,7 +104,7 @@ class SlickpicAlbumExtractor(SlickpicExtractor):
         }
 
     def images(self, data):
-        url = self.root + "/xhr/photo/get/list"
+        url = f"{self.root}/xhr/photo/get/list"
         data = {
             "tm"    : time.time(),
             "tk"    : data["tk"],
@@ -136,9 +136,9 @@ class SlickpicUserExtractor(SlickpicExtractor):
     )
 
     def items(self):
-        page = self.request(self.root + "/gallery?viewer").text
+        page = self.request(f"{self.root}/gallery?viewer").text
         data = {"_extractor": SlickpicAlbumExtractor}
-        base = self.root + "/albums/"
+        base = f"{self.root}/albums/"
 
-        for album in text.extract_iter(page, 'href="' + base, '"'):
+        for album in text.extract_iter(page, f'href="{base}', '"'):
             yield Message.Queue, base + album, data

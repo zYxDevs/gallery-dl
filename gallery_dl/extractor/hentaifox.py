@@ -94,7 +94,7 @@ class HentaifoxGalleryExtractor(HentaifoxBase, GalleryExtractor):
         result = []
         append = result.append
         extmap = {"j": "jpg", "p": "png", "g": "gif"}
-        urlfmt = ("/" + path + "/{}.{}").format
+        urlfmt = (f"/{path}" + "/{}.{}").format
 
         server1 = "https://i.hentaifox.com"
         server2 = "https://i2.hentaifox.com"
@@ -145,7 +145,7 @@ class HentaifoxSearchExtractor(HentaifoxBase, Extractor):
         num = 1
 
         while True:
-            url = "{}{}/pag/{}/".format(self.root, self.path, num)
+            url = f"{self.root}{self.path}/pag/{num}/"
             page = self.request(url).text
 
             for info in text.extract_iter(

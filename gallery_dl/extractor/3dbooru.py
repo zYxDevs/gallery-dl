@@ -34,7 +34,7 @@ class _3dbooruTagExtractor(_3dbooruBase, moebooru.MoebooruTagExtractor):
 
     def posts(self):
         params = {"tags": self.tags}
-        return self._pagination(self.root + "/post/index.json", params)
+        return self._pagination(f"{self.root}/post/index.json", params)
 
 
 class _3dbooruPoolExtractor(_3dbooruBase, moebooru.MoebooruPoolExtractor):
@@ -46,8 +46,8 @@ class _3dbooruPoolExtractor(_3dbooruBase, moebooru.MoebooruPoolExtractor):
     })
 
     def posts(self):
-        params = {"tags": "pool:" + self.pool_id}
-        return self._pagination(self.root + "/post/index.json", params)
+        params = {"tags": f"pool:{self.pool_id}"}
+        return self._pagination(f"{self.root}/post/index.json", params)
 
 
 class _3dbooruPostExtractor(_3dbooruBase, moebooru.MoebooruPostExtractor):
@@ -66,8 +66,8 @@ class _3dbooruPostExtractor(_3dbooruBase, moebooru.MoebooruPostExtractor):
     })
 
     def posts(self):
-        params = {"tags": "id:" + self.post_id}
-        return self._pagination(self.root + "/post/index.json", params)
+        params = {"tags": f"id:{self.post_id}"}
+        return self._pagination(f"{self.root}/post/index.json", params)
 
 
 class _3dbooruPopularExtractor(

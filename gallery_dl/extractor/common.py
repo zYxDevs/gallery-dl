@@ -88,9 +88,7 @@ class Extractor():
             default = value
 
         value = self.config(key, sentinel)
-        if value is not sentinel:
-            return value
-        return default
+        return value if value is not sentinel else default
 
     def config_accumulate(self, key):
         return config.accumulate(self._cfgpath, key)
@@ -107,11 +105,9 @@ class Extractor():
             if first:
                 first = False
                 values = config.accumulate(extr + path, key)
-            else:
-                conf = config.get(extr, path[0])
-                if conf:
-                    values[:0] = config.accumulate(
-                        (self.subcategory,), key, conf=conf)
+            elif conf := config.get(extr, path[0]):
+                values[:0] = config.accumulate(
+                    (self.subcategory,), key, conf=conf)
         return values
 
     def request(self, url, method="GET", session=None,
@@ -153,18 +149,18 @@ class Extractor():
                 if self._write_pages:
                     self._dump_response(response)
                 if 200 <= code < 400 or fatal is None and \
-                        (400 <= code < 500) or not fatal and \
-                        (400 <= code < 429 or 431 <= code < 500):
+                            (400 <= code < 500) or not fatal and \
+                            (400 <= code < 429 or 431 <= code < 500):
                     if encoding:
                         response.encoding = encoding
                     return response
                 if notfound and code == 404:
                     raise exception.NotFoundError(notfound)
 
-                msg = "'{} {}' for '{}'".format(code, response.reason, url)
+                msg = f"'{code} {response.reason}' for '{url}'"
                 server = response.headers.get("Server")
                 if server and server.startswith("cloudflare") and \
-                        code in (403, 503):
+                            code in (403, 503):
                     content = response.content
                     if b"_cf_chl_opt" in content or b"jschl-answer" in content:
                         self.log.warning("Cloudflare challenge")
@@ -287,11 +283,7 @@ class Extractor():
                 browser = "firefox"
 
             for key, value in HTTP_HEADERS[browser]:
-                if value and "{}" in value:
-                    headers[key] = value.format(platform)
-                else:
-                    headers[key] = value
-
+                headers[key] = value.format(platform) if value and "{}" in value else value
             ssl_options |= (ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 |
                             ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
             ssl_ciphers = SSL_CIPHERS[browser]
@@ -306,17 +298,11 @@ class Extractor():
             headers["Accept"] = "*/*"
             headers["Accept-Language"] = "en-US,en;q=0.5"
 
-        if BROTLI:
-            headers["Accept-Encoding"] = "gzip, deflate, br"
-        else:
-            headers["Accept-Encoding"] = "gzip, deflate"
-
-        custom_headers = self.config("headers")
-        if custom_headers:
+        headers["Accept-Encoding"] = "gzip, deflate, br" if BROTLI else "gzip, deflate"
+        if custom_headers := self.config("headers"):
             headers.update(custom_headers)
 
-        custom_ciphers = self.config("ciphers")
-        if custom_ciphers:
+        if custom_ciphers := self.config("ciphers"):
             if isinstance(custom_ciphers, list):
                 ssl_ciphers = ":".join(custom_ciphers)
             else:
@@ -348,8 +334,7 @@ class Extractor():
         if self.cookies_domain is None:
             return
 
-        cookies = self.config("cookies")
-        if cookies:
+        if cookies := self.config("cookies"):
             if isinstance(cookies, dict):
                 self.cookies_update_dict(cookies, self.cookies_domain)
 
@@ -544,13 +529,9 @@ class Extractor():
             Extractor._dump_sanitize('_', response.url),
         )
 
-        if util.WINDOWS:
-            path = os.path.abspath(fname)[:255]
-        else:
-            path = fname[:251]
-
+        path = os.path.abspath(fname)[:255] if util.WINDOWS else fname[:251]
         try:
-            with open(path + ".txt", 'wb') as fp:
+            with open(f"{path}.txt", 'wb') as fp:
                 util.dump_response(
                     response, fp,
                     headers=(self._write_pages in ("all", "ALL")),
@@ -726,8 +707,7 @@ class BaseExtractor(Extractor):
 
     @classmethod
     def update(cls, instances):
-        extra_instances = config.get(("extractor",), cls.basecategory)
-        if extra_instances:
+        if extra_instances := config.get(("extractor",), cls.basecategory):
             for category, info in extra_instances.items():
                 if isinstance(info, dict) and "root" in info:
                     instances[category] = info
@@ -743,11 +723,12 @@ class BaseExtractor(Extractor):
             pattern = info.get("pattern")
             if not pattern:
                 pattern = re.escape(root[root.index(":") + 3:])
-            pattern_list.append(pattern + "()")
+            pattern_list.append(f"{pattern}()")
 
         return (
-            r"(?:" + cls.basecategory + r":(https?://[^/?#]+)|"
-            r"(?:https?://)?(?:" + "|".join(pattern_list) + r"))"
+            f"(?:{cls.basecategory}:(https?://[^/?#]+)|(?:https?://)?(?:"
+            + "|".join(pattern_list)
+            + r"))"
         )
 
 
@@ -778,14 +759,14 @@ def _build_requests_adapter(ssl_options, ssl_ciphers, source_address):
 
     if ssl_options or ssl_ciphers:
         ssl_context = ssl.create_default_context()
-        if ssl_options:
-            ssl_context.options |= ssl_options
-        if ssl_ciphers:
-            ssl_context.set_ecdh_curve("prime256v1")
-            ssl_context.set_ciphers(ssl_ciphers)
     else:
         ssl_context = None
 
+    if ssl_options:
+        ssl_context.options |= ssl_options
+    if ssl_ciphers:
+        ssl_context.set_ecdh_curve("prime256v1")
+        ssl_context.set_ciphers(ssl_ciphers)
     adapter = _adapter_cache[key] = RequestsAdapter(
         ssl_context, source_address)
     return adapter

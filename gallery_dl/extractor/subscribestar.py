@@ -88,26 +88,26 @@ class SubscribestarExtractor(Extractor):
     def _media_from_post(html):
         media = []
 
-        gallery = text.extr(html, 'data-gallery="', '"')
-        if gallery:
+        if gallery := text.extr(html, 'data-gallery="', '"'):
             media.extend(
                 item for item in util.json_loads(text.unescape(gallery))
                 if "/previews/" not in item["url"]
             )
 
-        attachments = text.extr(
-            html, 'class="uploads-docs"', 'data-role="post-edit_form"')
-        if attachments:
-            for att in attachments.split('class="doc_preview"')[1:]:
-                media.append({
-                    "id"  : text.parse_int(text.extr(
-                        att, 'data-upload-id="', '"')),
-                    "name": text.unescape(text.extr(
-                        att, 'doc_preview-title">', '<')),
-                    "url" : text.unescape(text.extr(att, 'href="', '"')),
+        if attachments := text.extr(
+            html, 'class="uploads-docs"', 'data-role="post-edit_form"'
+        ):
+            media.extend(
+                {
+                    "id": text.parse_int(text.extr(att, 'data-upload-id="', '"')),
+                    "name": text.unescape(
+                        text.extr(att, 'doc_preview-title">', '<')
+                    ),
+                    "url": text.unescape(text.extr(att, 'href="', '"')),
                     "type": "attachment",
-                })
-
+                }
+                for att in attachments.split('class="doc_preview"')[1:]
+            )
         return media
 
     def _data_from_post(self, html):
@@ -166,7 +166,7 @@ class SubscribestarUserExtractor(SubscribestarExtractor):
 
     def posts(self):
         needle_next_page = 'data-role="infinite_scroll-next_page" href="'
-        page = self.request("{}/{}".format(self.root, self.item)).text
+        page = self.request(f"{self.root}/{self.item}").text
 
         while True:
             posts = page.split('<div class="post ')[1:]
@@ -174,10 +174,10 @@ class SubscribestarUserExtractor(SubscribestarExtractor):
                 return
             yield from posts
 
-            url = text.extr(posts[-1], needle_next_page, '"')
-            if not url:
+            if url := text.extr(posts[-1], needle_next_page, '"'):
+                page = self.request(self.root + text.unescape(url)).json()["html"]
+            else:
                 return
-            page = self.request(self.root + text.unescape(url)).json()["html"]
 
 
 class SubscribestarPostExtractor(SubscribestarExtractor):
@@ -212,7 +212,7 @@ class SubscribestarPostExtractor(SubscribestarExtractor):
     )
 
     def posts(self):
-        url = "{}/posts/{}".format(self.root, self.item)
+        url = f"{self.root}/posts/{self.item}"
         return (self.request(url).text,)
 
     def _data_from_post(self, html):

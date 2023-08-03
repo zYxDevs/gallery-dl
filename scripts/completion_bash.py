@@ -9,6 +9,7 @@
 
 """Generate bash completion script from gallery-dl's argument parser"""
 
+
 import util
 from gallery_dl import option
 
@@ -43,10 +44,7 @@ for action in option.build_parser()._actions:
     elif action.metavar in ("FILE", "CFG"):
         fileopts.extend(action.option_strings)
 
-    for opt in action.option_strings:
-        if opt.startswith("--"):
-            opts.append(opt)
-
+    opts.extend(opt for opt in action.option_strings if opt.startswith("--"))
 PATH = util.path("data/completion/gallery-dl")
 with util.lazy(PATH) as file:
     file.write(TEMPLATE % {

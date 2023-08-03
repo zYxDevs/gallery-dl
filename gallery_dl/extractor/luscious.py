@@ -26,8 +26,10 @@ class LusciousExtractor(Extractor):
             "variables"    : variables,
         }
         response = self.request(
-            "{}/graphql/nobatch/?operationName={}".format(self.root, op),
-            method="POST", json=data, fatal=False,
+            f"{self.root}/graphql/nobatch/?operationName={op}",
+            method="POST",
+            json=data,
+            fatal=False,
         )
 
         if response.status_code >= 400:

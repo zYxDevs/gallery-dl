@@ -39,8 +39,8 @@ class DeprecatedConfigConstAction(argparse.Action):
     """Set argparse const values as config values + deprecation warning"""
     def __call__(self, parser, namespace, values, option_string=None):
         sys.stderr.write(
-            "warning: {} is deprecated. Use {} instead.\n".format(
-                "/".join(self.option_strings), self.choices))
+            f'warning: {"/".join(self.option_strings)} is deprecated. Use {self.choices} instead.\n'
+        )
         namespace.options.append(((), self.dest, self.const))
 
 
@@ -68,7 +68,7 @@ class Formatter(argparse.HelpFormatter):
         opts = action.option_strings
         if action.metavar:
             opts = opts.copy()
-            opts[-1] += " " + action.metavar
+            opts[-1] += f" {action.metavar}"
         return join(opts)
 
 

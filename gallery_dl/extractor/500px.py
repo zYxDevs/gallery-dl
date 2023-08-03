@@ -24,7 +24,7 @@ class _500pxExtractor(Extractor):
     cookies_domain = ".500px.com"
 
     def _init(self):
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         data = self.metadata()

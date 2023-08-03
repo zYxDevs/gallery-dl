@@ -42,7 +42,7 @@ class ArchitizerProjectExtractor(GalleryExtractor):
     })
 
     def __init__(self, match):
-        url = "{}/projects/{}/".format(self.root, match.group(1))
+        url = f"{self.root}/projects/{match.group(1)}/"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -90,12 +90,11 @@ class ArchitizerFirmExtractor(Extractor):
         self.firm = match.group(1)
 
     def items(self):
-        url = url = "{}/firms/{}/?requesting_merlin=pages".format(
-            self.root, self.firm)
+        url = url = f"{self.root}/firms/{self.firm}/?requesting_merlin=pages"
         page = self.request(url).text
         data = {"_extractor": ArchitizerProjectExtractor}
 
         for project in text.extract_iter(page, '<a href="/projects/', '"'):
             if not project.startswith("q/"):
-                url = "{}/projects/{}".format(self.root, project)
+                url = f"{self.root}/projects/{project}"
                 yield Message.Queue, url, data

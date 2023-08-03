@@ -44,12 +44,11 @@ class ImagechestGalleryExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.gallery_id = match.group(1)
-        url = self.root + "/p/" + self.gallery_id
+        url = f"{self.root}/p/{self.gallery_id}"
         GalleryExtractor.__init__(self, match, url)
 
     def _init(self):
-        access_token = self.config("access-token")
-        if access_token:
+        if access_token := self.config("access-token"):
             self.api = ImagechestAPI(self, access_token)
             self.gallery_url = None
             self.metadata = self._metadata_api
@@ -67,7 +66,7 @@ class ImagechestGalleryExtractor(GalleryExtractor):
 
     def images(self, page):
         if " More Files</button>" in page:
-            url = "{}/p/{}/loadAll".format(self.root, self.gallery_id)
+            url = f"{self.root}/p/{self.gallery_id}/loadAll"
             headers = {
                 "X-Requested-With": "XMLHttpRequest",
                 "Origin"          : self.root,
@@ -114,18 +113,18 @@ class ImagechestAPI():
 
     def __init__(self, extractor, access_token):
         self.extractor = extractor
-        self.headers = {"Authorization": "Bearer " + access_token}
+        self.headers = {"Authorization": f"Bearer {access_token}"}
 
     def file(self, file_id):
-        endpoint = "/v1/file/" + file_id
+        endpoint = f"/v1/file/{file_id}"
         return self._call(endpoint)
 
     def post(self, post_id):
-        endpoint = "/v1/post/" + post_id
+        endpoint = f"/v1/post/{post_id}"
         return self._call(endpoint)
 
     def user(self, username):
-        endpoint = "/v1/user/" + username
+        endpoint = f"/v1/user/{username}"
         return self._call(endpoint)
 
     def _call(self, endpoint):

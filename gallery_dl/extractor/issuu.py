@@ -88,15 +88,14 @@ class IssuuUserExtractor(IssuuBase, Extractor):
         self.user = match.group(1)
 
     def items(self):
-        url = "{}/call/profile/v1/documents/{}".format(self.root, self.user)
+        url = f"{self.root}/call/profile/v1/documents/{self.user}"
         params = {"offset": 0, "limit": "25"}
 
         while True:
             data = self.request(url, params=params).json()
 
             for publication in data["items"]:
-                publication["url"] = "{}/{}/docs/{}".format(
-                    self.root, self.user, publication["uri"])
+                publication["url"] = f'{self.root}/{self.user}/docs/{publication["uri"]}'
                 publication["_extractor"] = IssuuPublicationExtractor
                 yield Message.Queue, publication["url"], publication
 

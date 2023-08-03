@@ -25,7 +25,7 @@ class PixnetExtractor(Extractor):
     def __init__(self, match):
         Extractor.__init__(self, match)
         self.blog, self.item_id = match.groups()
-        self.root = "https://{}.pixnet.net".format(self.blog)
+        self.root = f"https://{self.blog}.pixnet.net"
 
     def items(self):
         url = self.url_fmt.format(self.root, self.item_id)
@@ -40,12 +40,14 @@ class PixnetExtractor(Extractor):
             url, pos = text.extract(info, ' href="', '"')
             alt, pos = text.extract(info, ' alt="', '"', pos)
             item = {
-                "id"        : text.parse_int(url.rpartition("/")[2]),
-                "title"     : text.unescape(alt),
-                "_extractor": (PixnetFolderExtractor if "/folder/" in url else
-                               PixnetSetExtractor),
-            }
-            item.update(data)
+                "id": text.parse_int(url.rpartition("/")[2]),
+                "title": text.unescape(alt),
+                "_extractor": (
+                    PixnetFolderExtractor
+                    if "/folder/" in url
+                    else PixnetSetExtractor
+                ),
+            } | data
             yield Message.Queue, url, item
 
     def _pagination(self, page):
@@ -77,8 +79,7 @@ class PixnetImageExtractor(PixnetExtractor):
     def items(self):
         url = "https://api.pixnet.cc/oembed"
         params = {
-            "url": "https://{}.pixnet.net/album/photo/{}".format(
-                self.blog, self.item_id),
+            "url": f"https://{self.blog}.pixnet.net/album/photo/{self.item_id}",
             "format": "json",
         }
 
@@ -132,7 +133,7 @@ class PixnetSetExtractor(PixnetExtractor):
                 "filename": alt,
                 "extension": src.rpartition(".")[2],
             }
-            photo.update(data)
+            photo |= data
             yield Message.Url, photo["url"], photo
 
     def metadata(self, page):
@@ -163,11 +164,13 @@ class PixnetFolderExtractor(PixnetExtractor):
     })
 
 
+
+
 class PixnetUserExtractor(PixnetExtractor):
     """Extractor for all sets and folders of a pixnet user"""
     subcategory = "user"
     url_fmt = "{}{}/album/list"
-    pattern = BASE_PATTERN + r"()(?:/blog|/album(?:/list)?)?/?(?:$|[?#])"
+    pattern = f"{BASE_PATTERN}()(?:/blog|/album(?:/list)?)?/?(?:$|[?#])"
     test = (
         ("https://albertayu773.pixnet.net/"),
         ("https://albertayu773.pixnet.net/blog"),

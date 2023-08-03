@@ -3,6 +3,7 @@
 
 """Collect results of extractor unit tests"""
 
+
 import sys
 import os.path
 import datetime
@@ -35,7 +36,7 @@ os.makedirs(path, exist_ok=True)
 for idx, extr, url, result in tests:
 
     # filename
-    name = "{}-{}-{}.json".format(extr.category, extr.subcategory, idx)
+    name = f"{extr.category}-{extr.subcategory}-{idx}.json"
     print(name)
 
     # config values

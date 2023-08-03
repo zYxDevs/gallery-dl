@@ -38,13 +38,12 @@ class ItakuExtractor(Extractor):
             post["date"] = text.parse_datetime(
                 post["date_added"], "%Y-%m-%dT%H:%M:%S.%fZ")
             for category, tags in post.pop("categorized_tags").items():
-                post["tags_" + category.lower()] = [t["name"] for t in tags]
+                post[f"tags_{category.lower()}"] = [t["name"] for t in tags]
             post["tags"] = [t["name"] for t in post["tags"]]
 
             sections = []
             for s in post["sections"]:
-                group = s["group"]
-                if group:
+                if group := s["group"]:
                     sections.append(group["title"] + "/" + s["title"])
                 else:
                     sections.append(s["title"])
@@ -142,10 +141,10 @@ class ItakuAPI():
 
     def __init__(self, extractor):
         self.extractor = extractor
-        self.root = extractor.root + "/api"
+        self.root = f"{extractor.root}/api"
         self.headers = {
             "Accept": "application/json, text/plain, */*",
-            "Referer": extractor.root + "/",
+            "Referer": f"{extractor.root}/",
         }
 
     def galleries_images(self, username, section=None):
@@ -164,12 +163,12 @@ class ItakuAPI():
         return self._pagination(endpoint, params, self.image)
 
     def image(self, image_id):
-        endpoint = "/galleries/images/{}/".format(image_id)
+        endpoint = f"/galleries/images/{image_id}/"
         return self._call(endpoint)
 
     @memcache(keyarg=1)
     def user(self, username):
-        return self._call("/user_profiles/{}/".format(username))
+        return self._call(f"/user_profiles/{username}/")
 
     def _call(self, endpoint, params=None):
         if not endpoint.startswith("http"):
@@ -188,8 +187,7 @@ class ItakuAPI():
             else:
                 yield from data["results"]
 
-            url_next = data["links"].get("next")
-            if not url_next:
+            if url_next := data["links"].get("next"):
+                data = self._call(url_next)
+            else:
                 return
-
-            data = self._call(url_next)

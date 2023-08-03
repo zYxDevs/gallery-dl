@@ -78,7 +78,7 @@ class PiczelUserExtractor(PiczelExtractor):
         self.user = match.group(1)
 
     def posts(self):
-        url = "{}/api/users/{}/gallery".format(self.api_root, self.user)
+        url = f"{self.api_root}/api/users/{self.user}/gallery"
         return self._pagination(url)
 
 
@@ -98,7 +98,7 @@ class PiczelFolderExtractor(PiczelExtractor):
         self.user, self.folder_id = match.groups()
 
     def posts(self):
-        url = "{}/api/users/{}/gallery".format(self.api_root, self.user)
+        url = f"{self.api_root}/api/users/{self.user}/gallery"
         return self._pagination(url, int(self.folder_id))
 
 
@@ -136,5 +136,5 @@ class PiczelImageExtractor(PiczelExtractor):
         self.image_id = match.group(1)
 
     def posts(self):
-        url = "{}/api/gallery/{}".format(self.api_root, self.image_id)
+        url = f"{self.api_root}/api/gallery/{self.image_id}"
         return (self.request(url).json(),)

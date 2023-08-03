@@ -42,18 +42,18 @@ class CyberdropAlbumExtractor(lolisafe.LolisafeAlbumExtractor):
     )
 
     def fetch_album(self, album_id):
-        url = self.root + "/a/" + self.album_id
+        url = f"{self.root}/a/{self.album_id}"
         extr = text.extract_from(self.request(url).text)
 
         files = []
         append = files.append
         while True:
-            url = text.unescape(extr('id="file" href="', '"'))
-            if not url:
-                break
-            append({"file": url,
-                    "_fallback": (self.root + url[url.find("/", 8):],)})
+            if url := text.unescape(extr('id="file" href="', '"')):
+                append({"file": url,
+                        "_fallback": (self.root + url[url.find("/", 8):],)})
 
+            else:
+                break
         return files, {
             "album_id"   : self.album_id,
             "album_name" : extr("name: '", "'"),

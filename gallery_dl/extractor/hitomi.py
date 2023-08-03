@@ -67,12 +67,11 @@ class HitomiGalleryExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.gid = match.group(1)
-        url = "https://ltn.hitomi.la/galleries/{}.js".format(self.gid)
+        url = f"https://ltn.hitomi.la/galleries/{self.gid}.js"
         GalleryExtractor.__init__(self, match, url)
 
     def _init(self):
-        self.session.headers["Referer"] = "{}/reader/{}.html".format(
-            self.root, self.gid)
+        self.session.headers["Referer"] = f"{self.root}/reader/{self.gid}.html"
 
     def metadata(self, page):
         self.info = info = util.json_loads(page.partition("=")[2])
@@ -122,7 +121,7 @@ class HitomiGalleryExtractor(GalleryExtractor):
         result = []
         for image in self.info["files"]:
             if check:
-                if image.get("has" + fmt):
+                if image.get(f"has{fmt}"):
                     path = ext = fmt
                 else:
                     path = ext = "webp"
@@ -133,10 +132,7 @@ class HitomiGalleryExtractor(GalleryExtractor):
 
             # see https://ltn.hitomi.la/common.js
             inum = int(ihash[-1] + ihash[-3:-1], 16)
-            url = "https://{}{}.hitomi.la/{}/{}/{}/{}.{}".format(
-                chr(97 + gg_m.get(inum, gg_default)),
-                subdomain, path, gg_b, inum, ihash, idata["extension"],
-            )
+            url = f'https://{chr(97 + gg_m.get(inum, gg_default))}{subdomain}.hitomi.la/{path}/{gg_b}/{inum}/{ihash}.{idata["extension"]}'
             result.append((url, idata))
         return result
 
@@ -171,8 +167,7 @@ class HitomiTagExtractor(Extractor):
 
     def items(self):
         data = {"_extractor": HitomiGalleryExtractor}
-        nozomi_url = "https://ltn.hitomi.la/{}/{}.nozomi".format(
-            self.type, self.tag)
+        nozomi_url = f"https://ltn.hitomi.la/{self.type}/{self.tag}.nozomi"
         headers = {
             "Origin": self.root,
             "Cache-Control": "max-age=0",
@@ -181,14 +176,14 @@ class HitomiTagExtractor(Extractor):
         offset = 0
         total = None
         while True:
-            headers["Referer"] = "{}/{}/{}.html?page={}".format(
-                self.root, self.type, self.tag, offset // 100 + 1)
-            headers["Range"] = "bytes={}-{}".format(offset, offset+99)
+            headers[
+                "Referer"
+            ] = f"{self.root}/{self.type}/{self.tag}.html?page={offset // 100 + 1}"
+            headers["Range"] = f"bytes={offset}-{offset + 99}"
             response = self.request(nozomi_url, headers=headers)
 
             for gallery_id in decode_nozomi(response.content):
-                gallery_url = "{}/galleries/{}.html".format(
-                    self.root, gallery_id)
+                gallery_url = f"{self.root}/galleries/{gallery_id}.html"
                 yield Message.Queue, gallery_url, data
 
             offset += 100
@@ -224,4 +219,4 @@ def _parse_gg(extr):
     d = re.search(r"(?:var\s|default:)\s*o\s*=\s*(\d+)", page)
     b = re.search(r"b:\s*[\"'](.+)[\"']", page)
 
-    return m, b.group(1).strip("/"), int(d.group(1)) if d else 1
+    return m, b[1].strip("/"), int(d[1]) if d else 1

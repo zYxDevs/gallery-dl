@@ -46,8 +46,7 @@ class _2chanThreadExtractor(Extractor):
         self.server, self.board, self.thread = match.groups()
 
     def items(self):
-        url = "https://{}.2chan.net/{}/res/{}.htm".format(
-            self.server, self.board, self.thread)
+        url = f"https://{self.server}.2chan.net/{self.board}/res/{self.thread}.htm"
         page = self.request(url).text
         data = self.metadata(page)
         yield Message.Directory, data

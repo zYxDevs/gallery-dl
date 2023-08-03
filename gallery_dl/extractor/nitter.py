@@ -43,8 +43,7 @@ class NitterExtractor(BaseExtractor):
                 self.log.debug("Skipping %s (retweet)", tweet["tweet_id"])
                 continue
 
-            attachments = tweet.pop("_attach", "")
-            if attachments:
+            if attachments := tweet.pop("_attach", ""):
                 files = []
                 append = files.append
 
@@ -66,16 +65,17 @@ class NitterExtractor(BaseExtractor):
                         url = self.root + url
                     file = {"url": url, "_http_retry": _retry_on_404}
                     file["filename"], _, file["extension"] = \
-                        name.rpartition(".")
+                            name.rpartition(".")
                     append(file)
 
                 if videos and not files:
                     if ytdl:
-                        append({
-                            "url": "ytdl:{}/i/status/{}".format(
-                                self.root, tweet["tweet_id"]),
-                            "extension": None,
-                        })
+                        append(
+                            {
+                                "url": f'ytdl:{self.root}/i/status/{tweet["tweet_id"]}',
+                                "extension": None,
+                            }
+                        )
                     else:
                         for url in text.extract_iter(
                                 attachments, 'data-url="', '"'):
@@ -88,11 +88,13 @@ class NitterExtractor(BaseExtractor):
 
                             if url[0] == "/":
                                 url = self.root + url
-                            append({
-                                "url"      : "ytdl:" + url,
-                                "filename" : name.rpartition(".")[0],
-                                "extension": "mp4",
-                            })
+                            append(
+                                {
+                                    "url": f"ytdl:{url}",
+                                    "filename": name.rpartition(".")[0],
+                                    "extension": "mp4",
+                                }
+                            )
 
                         for url in text.extract_iter(
                                 attachments, '<source src="', '"'):
@@ -203,11 +205,14 @@ class NitterExtractor(BaseExtractor):
         quoted = self.config("quoted", False)
 
         if self.user_id:
-            self.user = self.request(
-                "{}/i/user/{}".format(self.root, self.user_id),
-                allow_redirects=False,
-            ).headers["location"].rpartition("/")[2]
-        base_url = url = "{}/{}{}".format(self.root, self.user, path)
+            self.user = (
+                self.request(
+                    f"{self.root}/i/user/{self.user_id}", allow_redirects=False
+                )
+                .headers["location"]
+                .rpartition("/")[2]
+            )
+        base_url = url = f"{self.root}/{self.user}{path}"
 
         while True:
             tweets_html = self.request(url).text.split(
@@ -221,11 +226,12 @@ class NitterExtractor(BaseExtractor):
                 if quoted and quote:
                     yield self._tweet_from_quote(quote)
 
-            more = text.extr(
-                tweets_html[-1], '<div class="show-more"><a href="?', '"')
-            if not more:
+            if more := text.extr(
+                tweets_html[-1], '<div class="show-more"><a href="?', '"'
+            ):
+                url = f"{base_url}?{text.unescape(more)}"
+            else:
                 return
-            url = base_url + "?" + text.unescape(more)
 
 
 BASE_PATTERN = NitterExtractor.update({
@@ -477,7 +483,7 @@ class NitterTweetExtractor(NitterExtractor):
     )
 
     def tweets(self):
-        url = "{}/i/status/{}".format(self.root, self.user)
+        url = f"{self.root}/i/status/{self.user}"
         html = text.extr(self.request(url).text, 'class="main-tweet', '''\
                 </div>
               </div></div></div>''')

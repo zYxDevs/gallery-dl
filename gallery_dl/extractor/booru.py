@@ -27,8 +27,7 @@ class BooruExtractor(BaseExtractor):
         notes = self.config("notes", False)
         fetch_html = tags or notes
 
-        url_key = self.config("url")
-        if url_key:
+        if url_key := self.config("url"):
             self._file_url = operator.itemgetter(url_key)
 
         for post in self.posts():
