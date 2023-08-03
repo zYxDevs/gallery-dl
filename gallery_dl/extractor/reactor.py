@@ -115,23 +115,23 @@ class ReactorExtractor(BaseExtractor):
             if not url:
                 continue
             if url.startswith("//"):
-                url = "http:" + url
+                url = f"http:{url}"
             width = text.extr(image, ' width="', '"')
             height = text.extr(image, ' height="', '"')
             image_id = url.rpartition("-")[2].partition(".")[0]
             num += 1
 
             if image.startswith("<iframe "):  # embed
-                url = "ytdl:" + text.unescape(url)
+                url = f"ytdl:{text.unescape(url)}"
             elif "/post/webm/" not in url and "/post/mp4/" not in url:
                 url = url.replace("/post/", "/post/full/")
 
             if self.gif and ("/post/webm/" in url or "/post/mp4/" in url):
-                gif_url = text.extr(image, '<a href="', '"')
-                if not gif_url:
-                    continue
-                url = gif_url
+                if gif_url := text.extr(image, '<a href="', '"'):
+                    url = gif_url
 
+                else:
+                    continue
             yield {
                 "url": url,
                 "post_id": post_id,

@@ -58,7 +58,7 @@ class SankakucomplexArticleExtractor(SankakucomplexExtractor):
     )
 
     def items(self):
-        url = "{}/{}/?pg=X".format(self.root, self.path)
+        url = f"{self.root}/{self.path}/?pg=X"
         extr = text.extract_from(self.request(url).text)
         data = {
             "title"      : text.unescape(
@@ -103,8 +103,8 @@ class SankakucomplexArticleExtractor(SankakucomplexExtractor):
     @staticmethod
     def _extract_embeds(content):
         return [
-            "ytdl:" + url for url in
-            re.findall(r"<iframe [^>]*src=[\"']([^\"']+)", content)
+            f"ytdl:{url}"
+            for url in re.findall(r"<iframe [^>]*src=[\"']([^\"']+)", content)
         ]
 
 
@@ -128,7 +128,7 @@ class SankakucomplexTagExtractor(SankakucomplexExtractor):
         data = {"_extractor": SankakucomplexArticleExtractor}
 
         while True:
-            url = "{}/{}/page/{}/".format(self.root, self.path, pnum)
+            url = f"{self.root}/{self.path}/page/{pnum}/"
             response = self.request(url, fatal=False)
             if response.status_code >= 400:
                 return

@@ -41,7 +41,7 @@ class MangakakalotChapterExtractor(MangakakalotBase, ChapterExtractor):
         ChapterExtractor.__init__(self, match, self.root + self.path)
 
     def _init(self):
-        self.session.headers['Referer'] = self.root + "/"
+        self.session.headers['Referer'] = f"{self.root}/"
 
     def metadata(self, page):
         _     , pos = text.extract(page, '<span itemprop="title">', '<')

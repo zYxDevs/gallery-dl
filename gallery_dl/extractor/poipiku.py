@@ -62,7 +62,7 @@ class PoipikuExtractor(Extractor):
             if not extr(' show all(+', '<'):
                 continue
 
-            url = self.root + "/f/ShowAppendFileF.jsp"
+            url = f"{self.root}/f/ShowAppendFileF.jsp"
             headers = {
                 "Accept" : "application/json, text/javascript, */*; q=0.01",
                 "X-Requested-With": "XMLHttpRequest",
@@ -111,7 +111,7 @@ class PoipikuUserExtractor(PoipikuExtractor):
         self._page, self.user_id = match.groups()
 
     def posts(self):
-        url = self.root + "/IllustListPcV.jsp"
+        url = f"{self.root}/IllustListPcV.jsp"
         params = {
             "PG" : text.parse_int(self._page, 0),
             "ID" : self.user_id,
@@ -190,4 +190,4 @@ class PoipikuPostExtractor(PoipikuExtractor):
         self.user_id, self.post_id = match.groups()
 
     def posts(self):
-        return ("/{}/{}.html".format(self.user_id, self.post_id),)
+        return (f"/{self.user_id}/{self.post_id}.html", )

@@ -112,11 +112,14 @@ class WallhavenUserExtractor(WallhavenExtractor):
         pass
 
     def items(self):
-        base = "{}/user/{}/".format(self.root, self.username)
-        return self._dispatch_extractors((
-            (WallhavenUploadsExtractor    , base + "uploads"),
-            (WallhavenCollectionsExtractor, base + "favorites"),
-        ), ("uploads",))
+        base = f"{self.root}/user/{self.username}/"
+        return self._dispatch_extractors(
+            (
+                (WallhavenUploadsExtractor, f"{base}uploads"),
+                (WallhavenCollectionsExtractor, f"{base}favorites"),
+            ),
+            ("uploads",),
+        )
 
 
 class WallhavenCollectionsExtractor(WallhavenExtractor):
@@ -135,8 +138,7 @@ class WallhavenCollectionsExtractor(WallhavenExtractor):
     def items(self):
         for collection in self.api.collections(self.username):
             collection["_extractor"] = WallhavenCollectionExtractor
-            url = "https://wallhaven.cc/user/{}/favorites/{}".format(
-                self.username, collection["id"])
+            url = f'https://wallhaven.cc/user/{self.username}/favorites/{collection["id"]}'
             yield Message.Queue, url, collection
 
 
@@ -158,7 +160,7 @@ class WallhavenUploadsExtractor(WallhavenExtractor):
         self.username = match.group(1)
 
     def wallpapers(self):
-        params = {"q": "@" + self.username}
+        params = {"q": f"@{self.username}"}
         return self.api.search(params.copy())
 
     def metadata(self):
@@ -232,15 +234,15 @@ class WallhavenAPI():
         self.headers = {"X-API-Key": key}
 
     def info(self, wallpaper_id):
-        endpoint = "/v1/w/" + wallpaper_id
+        endpoint = f"/v1/w/{wallpaper_id}"
         return self._call(endpoint)["data"]
 
     def collection(self, username, collection_id):
-        endpoint = "/v1/collections/{}/{}".format(username, collection_id)
+        endpoint = f"/v1/collections/{username}/{collection_id}"
         return self._pagination(endpoint)
 
     def collections(self, username):
-        endpoint = "/v1/collections/" + username
+        endpoint = f"/v1/collections/{username}"
         return self._pagination(endpoint, metadata=False)
 
     def search(self, params):
@@ -248,7 +250,7 @@ class WallhavenAPI():
         return self._pagination(endpoint, params)
 
     def _call(self, endpoint, params=None):
-        url = "https://wallhaven.cc/api" + endpoint
+        url = f"https://wallhaven.cc/api{endpoint}"
 
         while True:
             response = self.extractor.request(

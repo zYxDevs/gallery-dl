@@ -23,7 +23,7 @@ class _8chanExtractor(Extractor):
     root = "https://8chan.moe"
 
     def __init__(self, match):
-        self.root = "https://8chan." + match.group(1)
+        self.root = f"https://8chan.{match.group(1)}"
         Extractor.__init__(self, match)
 
     @memcache()
@@ -31,7 +31,7 @@ class _8chanExtractor(Extractor):
         # fetch captcha cookies
         # (necessary to download without getting interrupted)
         now = datetime.utcnow()
-        url = self.root + "/captcha.js"
+        url = f"{self.root}/captcha.js"
         params = {"d": now.strftime("%a %b %d %Y %H:%M:%S GMT+0000 (UTC)")}
         self.request(url, params=params).content
 
@@ -106,11 +106,11 @@ class _8chanThreadExtractor(_8chanExtractor):
 
     def items(self):
         # fetch thread data
-        url = "{}/{}/res/{}.".format(self.root, self.board, self.thread)
-        self.session.headers["Referer"] = url + "html"
-        thread = self.request(url + "json").json()
+        url = f"{self.root}/{self.board}/res/{self.thread}."
+        self.session.headers["Referer"] = f"{url}html"
+        thread = self.request(f"{url}json").json()
         thread["postId"] = thread["threadId"]
-        thread["_http_headers"] = {"Referer": url + "html"}
+        thread["_http_headers"] = {"Referer": f"{url}html"}
 
         try:
             self.cookies = self.cookies_prepare()
@@ -152,23 +152,22 @@ class _8chanBoardExtractor(_8chanExtractor):
         _, self.board, self.page = match.groups()
 
     def _init(self):
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         page = text.parse_int(self.page, 1)
-        url = "{}/{}/{}.json".format(self.root, self.board, page)
+        url = f"{self.root}/{self.board}/{page}.json"
         board = self.request(url).json()
         threads = board["threads"]
 
         while True:
             for thread in threads:
                 thread["_extractor"] = _8chanThreadExtractor
-                url = "{}/{}/res/{}.html".format(
-                    self.root, self.board, thread["threadId"])
+                url = f'{self.root}/{self.board}/res/{thread["threadId"]}.html'
                 yield Message.Queue, url, thread
 
             page += 1
             if page > board["pageCount"]:
                 return
-            url = "{}/{}/{}.json".format(self.root, self.board, page)
+            url = f"{self.root}/{self.board}/{page}.json"
             threads = self.request(url).json()["threads"]

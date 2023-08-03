@@ -72,8 +72,7 @@ class HttpDownloader(DownloaderBase):
                 chunk_size = 32768
             self.chunk_size = chunk_size
         if self.rate:
-            rate = text.parse_bytes(self.rate)
-            if rate:
+            if rate := text.parse_bytes(self.rate):
                 if rate < self.chunk_size:
                     self.chunk_size = rate
                 self.rate = rate
@@ -82,8 +81,7 @@ class HttpDownloader(DownloaderBase):
                 self.log.warning("Invalid rate limit (%r)", self.rate)
         if self.progress is not None:
             self.receive = self._receive_rate
-            if self.progress < 0.0:
-                self.progress = 0.0
+            self.progress = max(self.progress, 0.0)
 
     def download(self, url, pathfmt):
         try:
@@ -124,17 +122,15 @@ class HttpDownloader(DownloaderBase):
 
             # collect HTTP headers
             headers = {"Accept": "*/*"}
-            #   file-specific headers
-            extra = kwdict.get("_http_headers")
-            if extra:
-                headers.update(extra)
+            if extra := kwdict.get("_http_headers"):
+                headers |= extra
             #   general headers
             if self.headers:
                 headers.update(self.headers)
             #   partial content
             file_size = pathfmt.part_size()
             if file_size:
-                headers["Range"] = "bytes={}-".format(file_size)
+                headers["Range"] = f"bytes={file_size}-"
 
             # connect to (remote) source
             try:
@@ -165,7 +161,7 @@ class HttpDownloader(DownloaderBase):
             elif code == 416 and file_size:  # Requested Range Not Satisfiable
                 break
             else:
-                msg = "'{} {}' for '{}'".format(code, response.reason, url)
+                msg = f"'{code} {response.reason}' for '{url}'"
                 if code in self.retry_codes or 500 <= code < 600:
                     continue
                 retry = kwdict.get("_http_retry")
@@ -234,7 +230,7 @@ class HttpDownloader(DownloaderBase):
 
             # check filename extension against file header
             if adjust_extension and not offset and \
-                    pathfmt.extension in SIGNATURE_CHECKS:
+                        pathfmt.extension in SIGNATURE_CHECKS:
                 try:
                     file_header = next(
                         content if response.raw.chunked
@@ -244,7 +240,7 @@ class HttpDownloader(DownloaderBase):
                     print()
                     continue
                 if self._adjust_extension(pathfmt, file_header) and \
-                        pathfmt.exists():
+                            pathfmt.exists():
                     pathfmt.temppath = ""
                     return True
 
@@ -265,7 +261,7 @@ class HttpDownloader(DownloaderBase):
                     offset += len(file_header)
                 elif offset:
                     if adjust_extension and \
-                            pathfmt.extension in SIGNATURE_CHECKS:
+                                pathfmt.extension in SIGNATURE_CHECKS:
                         self._adjust_extension(pathfmt, fp.read(16))
                     fp.seek(offset)
 
@@ -279,8 +275,7 @@ class HttpDownloader(DownloaderBase):
 
                 # check file size
                 if size and fp.tell() < size:
-                    msg = "file size mismatch ({} < {})".format(
-                        fp.tell(), size)
+                    msg = f"file size mismatch ({fp.tell()} < {size})"
                     print()
                     continue
 
@@ -345,13 +340,12 @@ class HttpDownloader(DownloaderBase):
         mtype = mtype.partition(";")[0]
 
         if "/" not in mtype:
-            mtype = "image/" + mtype
+            mtype = f"image/{mtype}"
 
         if mtype in MIME_TYPES:
             return MIME_TYPES[mtype]
 
-        ext = mimetypes.guess_extension(mtype, strict=False)
-        if ext:
+        if ext := mimetypes.guess_extension(mtype, strict=False):
             return ext[1:]
 
         self.log.warning("Unknown MIME type '%s'", mtype)
@@ -420,41 +414,37 @@ MIME_TYPES = {
 
 # https://en.wikipedia.org/wiki/List_of_file_signatures
 SIGNATURE_CHECKS = {
-    "jpg" : lambda s: s[0:3] == b"\xFF\xD8\xFF",
-    "png" : lambda s: s[0:8] == b"\x89PNG\r\n\x1A\n",
-    "gif" : lambda s: s[0:6] in (b"GIF87a", b"GIF89a"),
-    "bmp" : lambda s: s[0:2] == b"BM",
-    "webp": lambda s: (s[0:4] == b"RIFF" and
-                       s[8:12] == b"WEBP"),
+    "jpg": lambda s: s[:3] == b"\xFF\xD8\xFF",
+    "png": lambda s: s[:8] == b"\x89PNG\r\n\x1A\n",
+    "gif": lambda s: s[:6] in (b"GIF87a", b"GIF89a"),
+    "bmp": lambda s: s[:2] == b"BM",
+    "webp": lambda s: s[:4] == b"RIFF" and s[8:12] == b"WEBP",
     "avif": lambda s: s[4:11] == b"ftypavi" and s[11] in b"fs",
-    "heic": lambda s: (s[4:10] == b"ftyphe" and s[10:12] in (
-                       b"ic", b"im", b"is", b"ix", b"vc", b"vm", b"vs")),
-    "svg" : lambda s: s[0:5] == b"<?xml",
-    "ico" : lambda s: s[0:4] == b"\x00\x00\x01\x00",
-    "cur" : lambda s: s[0:4] == b"\x00\x00\x02\x00",
-    "psd" : lambda s: s[0:4] == b"8BPS",
-    "mp4" : lambda s: (s[4:8] == b"ftyp" and s[8:11] in (
-                       b"mp4", b"avc", b"iso", b"M4V")),
-    "webm": lambda s: s[0:4] == b"\x1A\x45\xDF\xA3",
-    "ogg" : lambda s: s[0:4] == b"OggS",
-    "wav" : lambda s: (s[0:4] == b"RIFF" and
-                       s[8:12] == b"WAVE"),
-    "mp3" : lambda s: (s[0:3] == b"ID3" or
-                       s[0:2] in (b"\xFF\xFB", b"\xFF\xF3", b"\xFF\xF2")),
-    "zip" : lambda s: s[0:4] in (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
-    "rar" : lambda s: s[0:6] == b"Rar!\x1A\x07",
-    "7z"  : lambda s: s[0:6] == b"\x37\x7A\xBC\xAF\x27\x1C",
-    "pdf" : lambda s: s[0:5] == b"%PDF-",
-    "swf" : lambda s: s[0:3] in (b"CWS", b"FWS"),
-    "blend": lambda s: s[0:7] == b"BLENDER",
-    # unfortunately the Wavefront .obj format doesn't have a signature,
-    # so we check for the existence of Blender's comment
-    "obj" : lambda s: s[0:11] == b"# Blender v",
-    # Celsys Clip Studio Paint format
-    # https://github.com/rasensuihei/cliputils/blob/master/README.md
-    "clip": lambda s: s[0:8] == b"CSFCHUNK",
-    # check 'bin' files against all other file signatures
-    "bin" : lambda s: False,
+    "heic": lambda s: (
+        s[4:10] == b"ftyphe"
+        and s[10:12] in (b"ic", b"im", b"is", b"ix", b"vc", b"vm", b"vs")
+    ),
+    "svg": lambda s: s[:5] == b"<?xml",
+    "ico": lambda s: s[:4] == b"\x00\x00\x01\x00",
+    "cur": lambda s: s[:4] == b"\x00\x00\x02\x00",
+    "psd": lambda s: s[:4] == b"8BPS",
+    "mp4": lambda s: (
+        s[4:8] == b"ftyp" and s[8:11] in (b"mp4", b"avc", b"iso", b"M4V")
+    ),
+    "webm": lambda s: s[:4] == b"\x1A\x45\xDF\xA3",
+    "ogg": lambda s: s[:4] == b"OggS",
+    "wav": lambda s: s[:4] == b"RIFF" and s[8:12] == b"WAVE",
+    "mp3": lambda s: s[:3] == b"ID3"
+    or s[:2] in (b"\xFF\xFB", b"\xFF\xF3", b"\xFF\xF2"),
+    "zip": lambda s: s[:4] in (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
+    "rar": lambda s: s[:6] == b"Rar!\x1A\x07",
+    "7z": lambda s: s[:6] == b"\x37\x7A\xBC\xAF\x27\x1C",
+    "pdf": lambda s: s[:5] == b"%PDF-",
+    "swf": lambda s: s[:3] in (b"CWS", b"FWS"),
+    "blend": lambda s: s[:7] == b"BLENDER",
+    "obj": lambda s: s[:11] == b"# Blender v",
+    "clip": lambda s: s[:8] == b"CSFCHUNK",
+    "bin": lambda s: False,
 }
 
 __downloader__ = HttpDownloader

@@ -40,8 +40,7 @@ class RedgifsExtractor(Extractor):
 
         for gif in self.gifs():
 
-            gallery = gif.get("gallery")
-            if gallery:
+            if gallery := gif.get("gallery"):
                 gifs = self.api.gallery(gallery)["gifs"]
                 enum = 1
                 cnt = len(gifs)
@@ -72,8 +71,7 @@ class RedgifsExtractor(Extractor):
     def _formats(self, gif):
         urls = gif["urls"]
         for fmt in self.formats:
-            url = urls.get(fmt)
-            if url:
+            if url := urls.get(fmt):
                 url = url.replace("//thumbs2.", "//thumbs3.", 1)
                 text.nameext_from_url(url, gif)
                 yield url
@@ -134,7 +132,7 @@ class RedgifsCollectionExtractor(RedgifsExtractor):
 
     def metadata(self):
         data = {"userName": self.key}
-        data.update(self.api.collection_info(self.key, self.collection_id))
+        data |= self.api.collection_info(self.key, self.collection_id)
         return data
 
     def gifs(self):
@@ -154,8 +152,7 @@ class RedgifsCollectionsExtractor(RedgifsExtractor):
 
     def items(self):
         for collection in self.api.collections(self.key):
-            url = "{}/users/{}/collections/{}".format(
-                self.root, self.key, collection["folderId"])
+            url = f'{self.root}/users/{self.key}/collections/{collection["folderId"]}'
             collection["_extractor"] = RedgifsCollectionExtractor
             yield Message.Queue, url, collection
 
@@ -261,41 +258,40 @@ class RedgifsAPI():
     def __init__(self, extractor):
         self.extractor = extractor
         self.headers = {
-            "Referer"       : extractor.root + "/",
-            "authorization" : None,
-            "content-type"  : "application/json",
-            "x-customheader": extractor.root + "/",
-            "Origin"        : extractor.root,
+            "Referer": f"{extractor.root}/",
+            "authorization": None,
+            "content-type": "application/json",
+            "x-customheader": f"{extractor.root}/",
+            "Origin": extractor.root,
         }
 
     def gif(self, gif_id):
-        endpoint = "/v2/gifs/" + gif_id.lower()
+        endpoint = f"/v2/gifs/{gif_id.lower()}"
         return self._call(endpoint)["gif"]
 
     def gallery(self, gallery_id):
-        endpoint = "/v2/gallery/" + gallery_id
+        endpoint = f"/v2/gallery/{gallery_id}"
         return self._call(endpoint)
 
     def user(self, user, order="best"):
-        endpoint = "/v2/users/{}/search".format(user.lower())
+        endpoint = f"/v2/users/{user.lower()}/search"
         params = {"order": order}
         return self._pagination(endpoint, params)
 
     def collection(self, user, collection_id):
-        endpoint = "/v2/users/{}/collections/{}/gifs".format(
-            user, collection_id)
+        endpoint = f"/v2/users/{user}/collections/{collection_id}/gifs"
         return self._pagination(endpoint)
 
     def collection_info(self, user, collection_id):
-        endpoint = "/v2/users/{}/collections/{}".format(user, collection_id)
+        endpoint = f"/v2/users/{user}/collections/{collection_id}"
         return self._call(endpoint)
 
     def collections(self, user):
-        endpoint = "/v2/users/{}/collections".format(user)
+        endpoint = f"/v2/users/{user}/collections"
         return self._pagination(endpoint, key="collections")
 
     def niches(self, niche):
-        endpoint = "/v2/niches/{}/gifs".format(niche)
+        endpoint = f"/v2/niches/{niche}/gifs"
         return self._pagination(endpoint)
 
     def search(self, params):
@@ -325,7 +321,7 @@ class RedgifsAPI():
     @memcache(maxage=600)
     def _auth(self):
         # https://github.com/Redgifs/api/wiki/Temporary-tokens
-        url = self.API_ROOT + "/v2/auth/temporary"
+        url = f"{self.API_ROOT}/v2/auth/temporary"
         self.headers["authorization"] = None
         return "Bearer " + self.extractor.request(
             url, headers=self.headers).json()["token"]

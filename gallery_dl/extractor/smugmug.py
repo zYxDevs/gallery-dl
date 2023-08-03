@@ -188,7 +188,7 @@ class SmugmugPathExtractor(SmugmugExtractor):
             for node in nodes:
                 album_id = node["Uris"]["Album"].rpartition("/")[2]
                 node["_extractor"] = SmugmugAlbumExtractor
-                yield Message.Queue, "smugmug:album:" + album_id, node
+                yield (Message.Queue, f"smugmug:album:{album_id}", node)
 
         else:
             for album in self.api.user_albums(self.user):
@@ -214,36 +214,36 @@ class SmugmugAPI(oauth.OAuth1API):
     HEADERS = {"Accept": "application/json"}
 
     def album(self, album_id, expands=None):
-        return self._expansion("album/" + album_id, expands)
+        return self._expansion(f"album/{album_id}", expands)
 
     def image(self, image_id, expands=None):
-        return self._expansion("image/" + image_id, expands)
+        return self._expansion(f"image/{image_id}", expands)
 
     def node(self, node_id, expands=None):
-        return self._expansion("node/" + node_id, expands)
+        return self._expansion(f"node/{node_id}", expands)
 
     def user(self, username, expands=None):
-        return self._expansion("user/" + username, expands)
+        return self._expansion(f"user/{username}", expands)
 
     def album_images(self, album_id, expands=None):
-        return self._pagination("album/" + album_id + "!images", expands)
+        return self._pagination(f"album/{album_id}!images", expands)
 
     def node_children(self, node_id, expands=None):
-        return self._pagination("node/" + node_id + "!children", expands)
+        return self._pagination(f"node/{node_id}!children", expands)
 
     def user_albums(self, username, expands=None):
-        return self._pagination("user/" + username + "!albums", expands)
+        return self._pagination(f"user/{username}!albums", expands)
 
     def site_user(self, domain):
         return self._call("!siteuser", domain=domain)["Response"]["User"]
 
     def user_urlpathlookup(self, username, path):
-        endpoint = "user/" + username + "!urlpathlookup"
+        endpoint = f"user/{username}!urlpathlookup"
         params = {"urlpath": path}
         return self._expansion(endpoint, "Node", params)
 
     def _call(self, endpoint, params=None, domain=API_DOMAIN):
-        url = "https://{}/api/v2/{}".format(domain, endpoint)
+        url = f"https://{domain}/api/v2/{endpoint}"
         params = params or {}
         if self.api_key:
             params["APIKey"] = self.api_key
@@ -263,10 +263,10 @@ class SmugmugAPI(oauth.OAuth1API):
 
     def _expansion(self, endpoint, expands, params=None):
         endpoint = self._extend(endpoint, expands)
-        result = self._apply_expansions(self._call(endpoint, params), expands)
-        if not result:
+        if result := self._apply_expansions(self._call(endpoint, params), expands):
+            return result[0]
+        else:
             raise exception.NotFoundError()
-        return result[0]
 
     def _pagination(self, endpoint, expands=None):
         endpoint = self._extend(endpoint, expands)
@@ -283,7 +283,7 @@ class SmugmugAPI(oauth.OAuth1API):
     @staticmethod
     def _extend(endpoint, expands):
         if expands:
-            endpoint += "?_expand=" + expands
+            endpoint += f"?_expand={expands}"
         return endpoint
 
     @staticmethod

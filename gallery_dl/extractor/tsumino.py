@@ -30,7 +30,7 @@ class TsuminoBase():
     @cache(maxage=14*24*3600, keyarg=1)
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
-        url = "{}/Account/Login".format(self.root)
+        url = f"{self.root}/Account/Login"
         headers = {"Referer": url}
         data = {"Username": username, "Password": password}
 
@@ -75,7 +75,7 @@ class TsuminoGalleryExtractor(TsuminoBase, GalleryExtractor):
 
     def __init__(self, match):
         self.gallery_id = match.group(1)
-        url = "{}/entry/{}".format(self.root, self.gallery_id)
+        url = f"{self.root}/entry/{self.gallery_id}"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -108,7 +108,7 @@ class TsuminoGalleryExtractor(TsuminoBase, GalleryExtractor):
         }
 
     def images(self, page):
-        url = "{}/Read/Index/{}?page=1".format(self.root, self.gallery_id)
+        url = f"{self.root}/Read/Index/{self.gallery_id}?page=1"
         headers = {"Referer": self.gallery_url}
         response = self.request(url, headers=headers, fatal=False)
 
@@ -153,17 +153,14 @@ class TsuminoSearchExtractor(TsuminoBase, Extractor):
 
     def items(self):
         for gallery in self.galleries():
-            url = "{}/entry/{}".format(self.root, gallery["id"])
+            url = f'{self.root}/entry/{gallery["id"]}'
             gallery["_extractor"] = TsuminoGalleryExtractor
             yield Message.Queue, url, gallery
 
     def galleries(self):
         """Return all gallery results matching 'self.query'"""
-        url = "{}/Search/Operate?type=Book".format(self.root)
-        headers = {
-            "Referer": "{}/".format(self.root),
-            "X-Requested-With": "XMLHttpRequest",
-        }
+        url = f"{self.root}/Search/Operate?type=Book"
+        headers = {"Referer": f"{self.root}/", "X-Requested-With": "XMLHttpRequest"}
         data = {
             "PageNumber": 1,
             "Text": "",
@@ -174,7 +171,7 @@ class TsuminoSearchExtractor(TsuminoBase, Extractor):
             "ExcludeList": "0",
             "CompletelyExcludeHated": "false",
         }
-        data.update(self._parse(self.query))
+        data |= self._parse(self.query)
 
         while True:
             info = self.request(
@@ -327,7 +324,7 @@ class TsuminoSearchExtractor(TsuminoBase, Extractor):
                     result = ival if ival == fval else fval
                 else:
                     if sub not in ("true", "false", "null"):
-                        raise ValueError("bad value keyword: " + sub)
+                        raise ValueError(f"bad value keyword: {sub}")
                     result = sub
 
             return result

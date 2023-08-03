@@ -55,8 +55,7 @@ class XvideosGalleryExtractor(XvideosBase, GalleryExtractor):
 
     def __init__(self, match):
         self.user, self.gallery_id = match.groups()
-        url = "{}/profiles/{}/photos/{}".format(
-            self.root, self.user, self.gallery_id)
+        url = f"{self.root}/profiles/{self.user}/photos/{self.gallery_id}"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -110,7 +109,7 @@ class XvideosUserExtractor(XvideosBase, Extractor):
         self.user = match.group(1)
 
     def items(self):
-        url = "{}/profiles/{}".format(self.root, self.user)
+        url = f"{self.root}/profiles/{self.user}"
         page = self.request(url, notfound=self.subcategory).text
         data = util.json_loads(text.extr(
             page, "xv.conf=", ";</script>"))["data"]
@@ -132,6 +131,5 @@ class XvideosUserExtractor(XvideosBase, Extractor):
         galleries.sort(key=lambda x: x["id"])
 
         for gallery in galleries:
-            url = "https://www.xvideos.com/profiles/{}/photos/{}".format(
-                self.user, gallery["id"])
+            url = f'https://www.xvideos.com/profiles/{self.user}/photos/{gallery["id"]}'
             yield Message.Queue, url, gallery

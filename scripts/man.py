@@ -88,16 +88,15 @@ and https://github.com/mikf/gallery-dl/graphs/contributors
 .BR gallery-dl.conf (5)
 """
 
-    options = []
-    for action in gallery_dl.option.build_parser()._actions:
-        if action.help.startswith("=="):
-            continue
-        options.append(OPTS_FMT.format(
+    options = [
+        OPTS_FMT.format(
             ", ".join(action.option_strings).replace("-", r"\-"),
-            r"\f[I]{}\f[]".format(action.metavar) if action.metavar else "",
+            f"\f[I]{action.metavar}\f[]" if action.metavar else "",
             action.help,
-        ))
-
+        )
+        for action in gallery_dl.option.build_parser()._actions
+        if not action.help.startswith("==")
+    ]
     if not path:
         path = util.path("data/man/gallery-dl.1")
     with util.lazy(path) as file:
@@ -203,19 +202,16 @@ and https://github.com/mikf/gallery-dl/graphs/contributors
     content = []
 
     for sec_name, section in sections.items():
-        content.append(".SH " + sec_name.upper())
+        content.append(f".SH {sec_name.upper()}")
 
         for opt_name, option in section.items():
-            content.append(".SS " + opt_name)
+            content.append(f".SS {opt_name}")
 
             for field, text in option.items():
                 if field in ("Type", "Default"):
-                    content.append('.IP "{}:" {}'.format(field, len(field)+2))
-                    content.append(strip_rst(text))
+                    content.extend((f'.IP "{field}:" {len(field) + 2}', strip_rst(text)))
                 else:
-                    content.append('.IP "{}:" 4'.format(field))
-                    content.append(strip_rst(text, field != "Example"))
-
+                    content.extend((f'.IP "{field}:" 4', strip_rst(text, field != "Example")))
     if not path:
         path = util.path("data/man/gallery-dl.conf.5")
     with util.lazy(path) as file:

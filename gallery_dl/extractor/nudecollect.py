@@ -124,8 +124,7 @@ class NudecollectAlbumExtractor(NudecollectExtractor):
         self.slug = match.group(1)
         self.mirror = match.group(2) or match.group(5)
         self.count = text.parse_int(match.group(3) or match.group(4))
-        url = "{}/content/{}/image-1-pics-{}-mirror-{}.html".format(
-            self.root, self.slug, self.count, self.mirror)
+        url = f"{self.root}/content/{self.slug}/image-1-pics-{self.count}-mirror-{self.mirror}.html"
         NudecollectExtractor.__init__(self, match, url)
 
     def metadata(self, page):

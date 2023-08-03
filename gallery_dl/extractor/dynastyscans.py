@@ -21,7 +21,7 @@ class DynastyscansBase():
     root = "https://dynasty-scans.com"
 
     def _parse_image_page(self, image_id):
-        url = "{}/images/{}".format(self.root, image_id)
+        url = f"{self.root}/images/{image_id}"
         extr = text.extract_from(self.request(url).text)
 
         date = extr("class='create_at'>", "</span>")
@@ -68,16 +68,16 @@ class DynastyscansChapterExtractor(DynastyscansBase, ChapterExtractor):
         group = extr('"icon-print"></i> ', '</span>')
 
         return {
-            "manga"   : text.unescape(match.group(1)),
-            "chapter" : text.parse_int(match.group(2)),
-            "chapter_minor": match.group(3) or "",
-            "title"   : text.unescape(match.group(4) or ""),
-            "author"  : text.remove_html(author),
-            "group"   : (text.remove_html(group) or
-                         text.extr(group, ' alt="', '"')),
-            "date"    : text.parse_datetime(extr(
-                '"icon-calendar"></i> ', '<'), "%b %d, %Y"),
-            "lang"    : "en",
+            "manga": text.unescape(match[1]),
+            "chapter": text.parse_int(match[2]),
+            "chapter_minor": match[3] or "",
+            "title": text.unescape(match[4] or ""),
+            "author": text.remove_html(author),
+            "group": (text.remove_html(group) or text.extr(group, ' alt="', '"')),
+            "date": text.parse_datetime(
+                extr('"icon-calendar"></i> ', '<'), "%b %d, %Y"
+            ),
+            "lang": "en",
             "language": "English",
         }
 
@@ -135,7 +135,7 @@ class DynastyscansSearchExtractor(DynastyscansBase, Extractor):
             yield Message.Url, url, text.nameext_from_url(url, image)
 
     def images(self):
-        url = self.root + "/images?" + self.query.replace("[]", "%5B%5D")
+        url = f"{self.root}/images?" + self.query.replace("[]", "%5B%5D")
         params = {"page": 1}
 
         while True:

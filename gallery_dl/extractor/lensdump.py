@@ -26,15 +26,8 @@ class LensdumpBase():
             text.extr(page, ' id="list-most-oldest-link"', '>'),
             'href="', '"'))
         while page_url is not None:
-            if page_url == self.url:
-                current_page = page
-            else:
-                current_page = self.request(page_url).text
-
-            for node in text.extract_iter(
-                    current_page, ' class="list-item ', '>'):
-                yield node
-
+            current_page = page if page_url == self.url else self.request(page_url).text
+            yield from text.extract_iter(current_page, ' class="list-item ', '>')
             # find url of next page
             page_url = text.extr(
                 text.extr(current_page, ' data-pagination="next"', '>'),
@@ -139,7 +132,7 @@ class LensdumpImageExtractor(LensdumpBase, Extractor):
         self.key = match.group(1)
 
     def items(self):
-        url = "{}/i/{}".format(self.root, self.key)
+        url = f"{self.root}/i/{self.key}"
         extr = text.extract_from(self.request(url).text)
 
         data = {

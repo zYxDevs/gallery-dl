@@ -7,6 +7,7 @@
 
 """Generate fish completion script from gallery-dl's argument parser"""
 
+
 import util
 from gallery_dl import option
 
@@ -32,9 +33,9 @@ for action in option.build_parser()._actions:
 
     for optstr in action.option_strings:
         if optstr.startswith("--"):
-            opt += " -l '" + optstr[2:] + "'"
+            opt += f" -l '{optstr[2:]}'"
         else:
-            opt += " -s '" + optstr[1:] + "'"
+            opt += f" -s '{optstr[1:]}'"
 
     opt += " -d '" + action.help.replace("'", '"') + "'"
 

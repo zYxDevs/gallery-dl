@@ -119,7 +119,7 @@ class TestDownloaderBase(unittest.TestCase):
 
     @classmethod
     def _prepare_destination(cls, content=None, part=True, extension=None):
-        name = "file-{}".format(cls.fnum)
+        name = f"file-{cls.fnum}"
         cls.fnum += 1
 
         kwdict = {
@@ -147,7 +147,7 @@ class TestDownloaderBase(unittest.TestCase):
         success = self.downloader.download(url, pathfmt)
 
         # test successful download
-        self.assertTrue(success, "downloading '{}' failed".format(url))
+        self.assertTrue(success, f"downloading '{url}' failed")
 
         # test content
         mode = "r" + ("b" if isinstance(output, bytes) else "")
@@ -156,11 +156,7 @@ class TestDownloaderBase(unittest.TestCase):
         self.assertEqual(content, output)
 
         # test filename extension
-        self.assertEqual(
-            pathfmt.extension,
-            expected_extension,
-            content[0:16],
-        )
+        self.assertEqual(pathfmt.extension, expected_extension, content[:16])
         self.assertEqual(
             os.path.splitext(pathfmt.realpath)[1][1:],
             expected_extension,
@@ -175,15 +171,20 @@ class TestHTTPDownloader(TestDownloaderBase):
         cls.downloader = downloader.find("http")(cls.job)
 
         port = 8088
-        cls.address = "http://127.0.0.1:{}".format(port)
+        cls.address = f"http://127.0.0.1:{port}"
         server = http.server.HTTPServer(("", port), HttpRequestHandler)
         threading.Thread(target=server.serve_forever, daemon=True).start()
 
     def _run_test(self, ext, input, output,
                   extension, expected_extension=None):
         TestDownloaderBase._run_test(
-            self, self.address + "/" + ext, input, output,
-            extension, expected_extension)
+            self,
+            f"{self.address}/{ext}",
+            input,
+            output,
+            extension,
+            expected_extension,
+        )
 
     def tearDown(self):
         self.downloader.minsize = self.downloader.maxsize = None
@@ -209,7 +210,7 @@ class TestHTTPDownloader(TestDownloaderBase):
         self._run_test("gif", None, DATA["gif"], "jpg", "gif")
 
     def test_http_filesize_min(self):
-        url = self.address + "/gif"
+        url = f"{self.address}/gif"
         pathfmt = self._prepare_destination(None, extension=None)
         self.downloader.minsize = 100
         with self.assertLogs(self.downloader.log, "WARNING"):
@@ -217,7 +218,7 @@ class TestHTTPDownloader(TestDownloaderBase):
         self.assertFalse(success)
 
     def test_http_filesize_max(self):
-        url = self.address + "/jpg"
+        url = f"{self.address}/jpg"
         pathfmt = self._prepare_destination(None, extension=None)
         self.downloader.maxsize = 100
         with self.assertLogs(self.downloader.log, "WARNING"):
@@ -258,10 +259,9 @@ class HttpRequestHandler(http.server.BaseHTTPRequestHandler):
             status = 206
 
             match = re.match(r"bytes=(\d+)-", self.headers["Range"])
-            start = int(match.group(1))
+            start = int(match[1])
 
-            headers["Content-Range"] = "bytes {}-{}/{}".format(
-                start, len(output)-1, len(output))
+            headers["Content-Range"] = f"bytes {start}-{len(output) - 1}/{len(output)}"
             output = output[start:]
         else:
             status = 200

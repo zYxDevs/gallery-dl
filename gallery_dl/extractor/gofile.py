@@ -112,7 +112,7 @@ class GofileFolderExtractor(Extractor):
     @cache(maxage=86400)
     def _get_website_token(self):
         self.log.debug("Fetching website token")
-        page = self.request(self.root + "/dist/js/alljs.js").text
+        page = self.request(f"{self.root}/dist/js/alljs.js").text
         return text.extr(page, 'fetchData.websiteToken = "', '"')
 
     def _get_content(self, content_id, password=None):
@@ -127,7 +127,8 @@ class GofileFolderExtractor(Extractor):
 
     def _api_request(self, endpoint, params=None):
         response = self.request(
-            "https://api.gofile.io/" + endpoint, params=params).json()
+            f"https://api.gofile.io/{endpoint}", params=params
+        ).json()
 
         if response["status"] != "ok":
             if response["status"] == "error-notFound":

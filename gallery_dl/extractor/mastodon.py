@@ -99,7 +99,7 @@ INSTANCES = {
     }
 }
 
-BASE_PATTERN = MastodonExtractor.update(INSTANCES) + "(?:/web)?"
+BASE_PATTERN = f"{MastodonExtractor.update(INSTANCES)}(?:/web)?"
 
 
 class MastodonUserExtractor(MastodonExtractor):
@@ -221,7 +221,7 @@ class MastodonAPI():
             except (KeyError, TypeError):
                 pass
         if access_token:
-            self.headers = {"Authorization": "Bearer " + access_token}
+            self.headers = {"Authorization": f"Bearer {access_token}"}
         else:
             self.headers = None
 
@@ -236,9 +236,9 @@ class MastodonAPI():
             pass
 
         if "@" in username:
-            handle = "@" + username
+            handle = f"@{username}"
         else:
-            handle = "@{}@{}".format(username, self.extractor.instance)
+            handle = f"@{username}@{self.extractor.instance}"
 
         for account in self.account_search(handle, 1):
             if account["acct"] == username:
@@ -251,7 +251,7 @@ class MastodonAPI():
         return self._pagination(endpoint, None)
 
     def account_following(self, account_id):
-        endpoint = "/v1/accounts/{}/following".format(account_id)
+        endpoint = f"/v1/accounts/{account_id}/following"
         return self._pagination(endpoint, None)
 
     def account_lookup(self, username):
@@ -268,22 +268,18 @@ class MastodonAPI():
     def account_statuses(self, account_id, only_media=True,
                          exclude_replies=False):
         """Fetch an account's statuses"""
-        endpoint = "/v1/accounts/{}/statuses".format(account_id)
+        endpoint = f"/v1/accounts/{account_id}/statuses"
         params = {"only_media"     : "1" if only_media else "0",
                   "exclude_replies": "1" if exclude_replies else "0"}
         return self._pagination(endpoint, params)
 
     def status(self, status_id):
         """Fetch a status"""
-        endpoint = "/v1/statuses/" + status_id
+        endpoint = f"/v1/statuses/{status_id}"
         return self._call(endpoint).json()
 
     def _call(self, endpoint, params=None):
-        if endpoint.startswith("http"):
-            url = endpoint
-        else:
-            url = self.root + "/api" + endpoint
-
+        url = endpoint if endpoint.startswith("http") else f"{self.root}/api{endpoint}"
         while True:
             response = self.extractor.request(
                 url, params=params, headers=self.headers, fatal=None)

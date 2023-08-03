@@ -44,7 +44,7 @@ class TestExtractorResults(unittest.TestCase):
         if cls._skipped:
             print("\n\nSkipped tests:")
             for url, exc in cls._skipped:
-                print('- {} ("{}")'.format(url, exc))
+                print(f'- {url} ("{exc}")')
 
     def _run_test(self, extr, url, result):
         if result:
@@ -75,7 +75,7 @@ class TestExtractorResults(unittest.TestCase):
         except exception.HttpError as exc:
             exc = str(exc)
             if re.match(r"'5\d\d ", exc) or \
-                    re.search(r"\bRead timed out\b", exc):
+                        re.search(r"\bRead timed out\b", exc):
                 self._skipped.append((url, exc))
                 self.skipTest(exc)
             raise
@@ -125,7 +125,7 @@ class TestExtractorResults(unittest.TestCase):
             count = result["count"]
             if isinstance(count, str):
                 self.assertRegex(count, r"^ *(==|!=|<|<=|>|>=) *\d+ *$")
-                expr = "{} {}".format(len(tjob.url_list), count)
+                expr = f"{len(tjob.url_list)} {count}"
                 self.assertTrue(eval(expr), msg=expr)
             else:  # assume integer
                 self.assertEqual(len(tjob.url_list), count)
@@ -378,7 +378,7 @@ def generate_tests():
 
     # add 'test_...' methods
     for extr in filter(fltr, extractor.extractors()):
-        name = "test_" + extr.__name__ + "_"
+        name = f"test_{extr.__name__}_"
         for num, tcase in enumerate(extr._get_tests(), 1):
             test = _generate_test(extr, tcase)
             test.__name__ = name + str(num)

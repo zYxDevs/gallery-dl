@@ -42,7 +42,7 @@ class PahealExtractor(Extractor):
         """Return an iterable containing data of all relevant posts"""
 
     def _extract_post(self, post_id):
-        url = "{}/post/view/{}".format(self.root, post_id)
+        url = f"{self.root}/post/view/{post_id}"
         extr = text.extract_from(self.request(url).text)
 
         post = {
@@ -118,7 +118,7 @@ class PahealTagExtractor(PahealExtractor):
     def get_posts(self):
         pnum = 1
         while True:
-            url = "{}/post/list/{}/{}".format(self.root, self.tags, pnum)
+            url = f"{self.root}/post/list/{self.tags}/{pnum}"
             page = self.request(url).text
 
             pos = page.find("id='image-list'")

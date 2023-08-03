@@ -57,7 +57,7 @@ class WebmshareVideoExtractor(Extractor):
         self.video_id = match.group(1)
 
     def items(self):
-        url = "{}/{}".format(self.root, self.video_id)
+        url = f"{self.root}/{self.video_id}"
         extr = text.extract_from(self.request(url).text)
 
         data = {

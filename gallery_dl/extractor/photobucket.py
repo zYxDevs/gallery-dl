@@ -48,7 +48,7 @@ class PhotobucketAlbumExtractor(Extractor):
     )
 
     def __init__(self, match):
-        self.root = "https://" + match.group(1)
+        self.root = f"https://{match.group(1)}"
         Extractor.__init__(self, match)
 
     def _init(self):
@@ -77,7 +77,7 @@ class PhotobucketAlbumExtractor(Extractor):
             json_data = text.extract(page, "collectionData:", ",\n")[0]
             if not json_data:
                 msg = text.extr(page, 'libraryPrivacyBlock">', "</div>")
-                msg = ' ("{}")'.format(text.remove_html(msg)) if msg else ""
+                msg = f' ("{text.remove_html(msg)}")' if msg else ""
                 self.log.error("Unable to get JSON data%s", msg)
                 return
             data = json.loads(json_data)
@@ -91,7 +91,7 @@ class PhotobucketAlbumExtractor(Extractor):
 
     def subalbums(self):
         """Return all subalbum objects"""
-        url = self.root + "/component/Albums-SubalbumList"
+        url = f"{self.root}/component/Albums-SubalbumList"
         params = {
             "albumPath": self.album_path,
             "fetchSubAlbumsOnly": "true",

@@ -60,7 +60,7 @@ class FanboxExtractor(Extractor):
     def _get_post_data(self, post_id):
         """Fetch and process post data"""
         headers = {"Origin": self.root}
-        url = "https://api.fanbox.cc/post.info?postId="+post_id
+        url = f"https://api.fanbox.cc/post.info?postId={post_id}"
         post = self.request(url, headers=headers).json()["body"]
 
         content_body = post.pop("body", None)
@@ -103,8 +103,7 @@ class FanboxExtractor(Extractor):
 
     def _get_urls_from_post(self, content_body, post):
         num = 0
-        cover_image = post.get("coverImageUrl")
-        if cover_image:
+        if cover_image := post.get("coverImageUrl"):
             cover_image = re.sub("/c/[0-9a-z_]+", "", cover_image)
             final_post = post.copy()
             final_post["isCoverImage"] = True
@@ -118,17 +117,19 @@ class FanboxExtractor(Extractor):
             return
 
         if "html" in content_body:
-            html_urls = []
-
-            for href in text.extract_iter(content_body["html"], 'href="', '"'):
-                if "fanbox.pixiv.net/images/entry" in href:
-                    html_urls.append(href)
-                elif "downloads.fanbox.cc" in href:
-                    html_urls.append(href)
-            for src in text.extract_iter(content_body["html"],
-                                         'data-src-original="', '"'):
-                html_urls.append(src)
-
+            html_urls = [
+                href
+                for href in text.extract_iter(content_body["html"], 'href="', '"')
+                if "fanbox.pixiv.net/images/entry" in href
+                or "downloads.fanbox.cc" in href
+            ]
+            html_urls.extend(
+                iter(
+                    text.extract_iter(
+                        content_body["html"], 'data-src-original="', '"'
+                    )
+                )
+            )
             for url in html_urls:
                 final_post = post.copy()
                 text.nameext_from_url(url, final_post)
@@ -199,18 +200,18 @@ class FanboxExtractor(Extractor):
         is_video = False
 
         if provider == "soundcloud":
-            url = prefix+"https://soundcloud.com/"+content_id
+            url = f"{prefix}https://soundcloud.com/{content_id}"
             is_video = True
         elif provider == "youtube":
-            url = prefix+"https://youtube.com/watch?v="+content_id
+            url = f"{prefix}https://youtube.com/watch?v={content_id}"
             is_video = True
         elif provider == "vimeo":
-            url = prefix+"https://vimeo.com/"+content_id
+            url = f"{prefix}https://vimeo.com/{content_id}"
             is_video = True
         elif provider == "fanbox":
             # this is an old URL format that redirects
             # to a proper Fanbox URL
-            url = "https://www.pixiv.net/fanbox/"+content_id
+            url = f"https://www.pixiv.net/fanbox/{content_id}"
             # resolve redirect
             try:
                 url = self.request(url, method="HEAD",
@@ -222,20 +223,18 @@ class FanboxExtractor(Extractor):
             else:
                 final_post["_extractor"] = FanboxPostExtractor
         elif provider == "twitter":
-            url = "https://twitter.com/_/status/"+content_id
+            url = f"https://twitter.com/_/status/{content_id}"
         elif provider == "google_forms":
             templ = "https://docs.google.com/forms/d/e/{}/viewform?usp=sf_link"
             url = templ.format(content_id)
         else:
-            self.log.warning("service not recognized: {}".format(provider))
+            self.log.warning(f"service not recognized: {provider}")
 
         if url:
             final_post["embed"] = embed
             final_post["embedUrl"] = url
             text.nameext_from_url(url, final_post)
-            msg_type = Message.Queue
-            if is_video and self.embeds == "ytdl":
-                msg_type = Message.Url
+            msg_type = Message.Url if is_video and self.embeds == "ytdl" else Message.Queue
             return msg_type, url, final_post
 
 
@@ -343,7 +342,7 @@ class FanboxRedirectExtractor(Extractor):
         self.user_id = match.group(1)
 
     def items(self):
-        url = "https://www.pixiv.net/fanbox/creator/" + self.user_id
+        url = f"https://www.pixiv.net/fanbox/creator/{self.user_id}"
         data = {"_extractor": FanboxCreatorExtractor}
         response = self.request(
             url, method="HEAD", allow_redirects=False, notfound="user")

@@ -38,14 +38,14 @@ class ExhentaiExtractor(Extractor):
         domain = self.config("domain", "auto")
         if domain == "auto":
             domain = ("ex" if self.version == "ex" else "e-") + "hentai.org"
-        self.root = "https://" + domain
-        self.cookies_domain = "." + domain
+        self.root = f"https://{domain}"
+        self.cookies_domain = f".{domain}"
 
         Extractor.initialize(self)
 
         if self.version != "ex":
             self.cookies.set("nw", "1", domain=self.cookies_domain)
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
         self.original = self.config("original", True)
 
         limits = self.config("limits", False)
@@ -217,10 +217,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
             data.update(image)
             if self.limits:
                 self._check_limits(data)
-            if "/fullimg.php" in url:
-                data["_http_validate"] = _validate_response
-            else:
-                data["_http_validate"] = None
+            data["_http_validate"] = _validate_response if "/fullimg.php" in url else None
             yield Message.Url, url, data
 
     def _items_hitomi(self):
@@ -231,7 +228,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
             data = {}
 
         from .hitomi import HitomiGalleryExtractor
-        url = "https://hitomi.la/galleries/{}.html".format(self.gallery_id)
+        url = f"https://hitomi.la/galleries/{self.gallery_id}.html"
         data["_extractor"] = HitomiGalleryExtractor
         yield Message.Queue, url, data
 
@@ -246,27 +243,27 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
     def metadata_from_page(self, page):
         extr = text.extract_from(page)
         data = {
-            "gid"          : self.gallery_id,
-            "token"        : self.gallery_token,
-            "thumb"        : extr("background:transparent url(", ")"),
-            "title"        : text.unescape(extr('<h1 id="gn">', '</h1>')),
-            "title_jpn"    : text.unescape(extr('<h1 id="gj">', '</h1>')),
-            "_"            : extr('<div id="gdc"><div class="cs ct', '"'),
-            "eh_category"  : extr('>', '<'),
-            "uploader"     : extr('<div id="gdn">', '</div>'),
-            "date"         : text.parse_datetime(extr(
-                '>Posted:</td><td class="gdt2">', '</td>'), "%Y-%m-%d %H:%M"),
-            "parent"       : extr(
-                '>Parent:</td><td class="gdt2"><a href="', '"'),
-            "expunged"     : "Yes" != extr(
-                '>Visible:</td><td class="gdt2">', '<'),
-            "language"     : extr('>Language:</td><td class="gdt2">', ' '),
-            "filesize"     : text.parse_bytes(extr(
-                '>File Size:</td><td class="gdt2">', '<').rstrip("Bb")),
-            "filecount"    : extr('>Length:</td><td class="gdt2">', ' '),
-            "favorites"    : extr('id="favcount">', ' '),
-            "rating"       : extr(">Average: ", "<"),
-            "torrentcount" : extr('>Torrent Download (', ')'),
+            "gid": self.gallery_id,
+            "token": self.gallery_token,
+            "thumb": extr("background:transparent url(", ")"),
+            "title": text.unescape(extr('<h1 id="gn">', '</h1>')),
+            "title_jpn": text.unescape(extr('<h1 id="gj">', '</h1>')),
+            "_": extr('<div id="gdc"><div class="cs ct', '"'),
+            "eh_category": extr('>', '<'),
+            "uploader": extr('<div id="gdn">', '</div>'),
+            "date": text.parse_datetime(
+                extr('>Posted:</td><td class="gdt2">', '</td>'), "%Y-%m-%d %H:%M"
+            ),
+            "parent": extr('>Parent:</td><td class="gdt2"><a href="', '"'),
+            "expunged": extr('>Visible:</td><td class="gdt2">', '<') != "Yes",
+            "language": extr('>Language:</td><td class="gdt2">', ' '),
+            "filesize": text.parse_bytes(
+                extr('>File Size:</td><td class="gdt2">', '<').rstrip("Bb")
+            ),
+            "filecount": extr('>Length:</td><td class="gdt2">', ' '),
+            "favorites": extr('id="favcount">', ' '),
+            "rating": extr(">Average: ", "<"),
+            "torrentcount": extr('>Torrent Download (', ')'),
         }
 
         if data["uploader"].startswith("<"):
@@ -288,7 +285,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
         return data
 
     def metadata_from_api(self):
-        url = self.root + "/api.php"
+        url = f"{self.root}/api.php"
         data = {
             "method": "gdata",
             "gidlist": ((self.gallery_id, self.gallery_token),),
@@ -312,7 +309,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
 
         try:
             if self.original and orig:
-                url = self.root + "/fullimg.php" + text.unescape(orig)
+                url = f"{self.root}/fullimg.php{text.unescape(orig)}"
                 data = self._parse_original_info(extr('ownload original', '<'))
             else:
                 url = iurl
@@ -331,7 +328,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
 
     def images_from_api(self):
         """Get image url and data from api calls"""
-        api_url = self.root + "/api.php"
+        api_url = f"{self.root}/api.php"
         nextkey = self.key["next"]
         request = {
             "method" : "showpage",
@@ -405,8 +402,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
         self._remaining = self.limits - text.parse_int(current)
 
     def _gallery_page(self):
-        url = "{}/g/{}/{}/".format(
-            self.root, self.gallery_id, self.gallery_token)
+        url = f"{self.root}/g/{self.gallery_id}/{self.gallery_token}/"
         response = self.request(url, fatal=False)
         page = response.text
 
@@ -419,8 +415,7 @@ class ExhentaiGalleryExtractor(ExhentaiExtractor):
         return page
 
     def _image_page(self):
-        url = "{}/s/{}/{}-{}".format(
-            self.root, self.image_token, self.gallery_id, self.image_num)
+        url = f"{self.root}/s/{self.image_token}/{self.gallery_id}-{self.image_num}"
         page = self.request(url, fatal=False).text
 
         if page.startswith(("Invalid page", "Keep trying")):
@@ -488,7 +483,7 @@ class ExhentaiSearchExtractor(ExhentaiExtractor):
         if tag:
             if "+" in tag:
                 ns, _, tag = tag.rpartition(":")
-                tag = '{}:"{}$"'.format(ns, tag.replace("+", " "))
+                tag = f'{ns}:"{tag.replace("+", " ")}$"'
             else:
                 tag += "$"
             self.params = {"f_search": tag, "page": 0}
@@ -514,7 +509,7 @@ class ExhentaiSearchExtractor(ExhentaiExtractor):
                 last = url
                 data["gallery_id"] = text.parse_int(gallery.group(2))
                 data["gallery_token"] = gallery.group(3)
-                yield Message.Queue, url + "/", data
+                yield (Message.Queue, f"{url}/", data)
 
             next_url = text.extr(page, 'nexturl="', '"', None)
             if next_url is not None:
@@ -544,4 +539,4 @@ class ExhentaiFavoriteExtractor(ExhentaiSearchExtractor):
 
     def __init__(self, match):
         ExhentaiSearchExtractor.__init__(self, match)
-        self.search_url = self.root + "/favorites.php"
+        self.search_url = f"{self.root}/favorites.php"

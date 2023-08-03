@@ -24,14 +24,13 @@ class ImagefapExtractor(Extractor):
     request_interval = (2.0, 4.0)
 
     def _init(self):
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def request(self, url, **kwargs):
         response = Extractor.request(self, url, **kwargs)
 
         if response.history and response.url.endswith("/human-verification"):
-            msg = text.extr(response.text, '<div class="mt-4', '<')
-            if msg:
+            if msg := text.extr(response.text, '<div class="mt-4', '<'):
                 msg = " ".join(msg.partition(">")[2].split())
                 raise exception.StopExtraction("'%s'", msg)
             self.log.warning("HTTP redirect to %s", response.url)
@@ -94,7 +93,7 @@ class ImagefapGalleryExtractor(ImagefapExtractor):
         self.image_id = ""
 
     def items(self):
-        url = "{}/gallery/{}".format(self.root, self.gid)
+        url = f"{self.root}/gallery/{self.gid}"
         page = self.request(url).text
         data = self.get_job_metadata(page)
         yield Message.Directory, data
@@ -126,12 +125,12 @@ class ImagefapGalleryExtractor(ImagefapExtractor):
 
     def get_images(self):
         """Collect image-urls and -metadata"""
-        url = "{}/photo/{}/".format(self.root, self.image_id)
+        url = f"{self.root}/photo/{self.image_id}/"
         params = {"gid": self.gid, "idx": 0, "partial": "true"}
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "X-Requested-With": "XMLHttpRequest",
-            "Referer": "{}?pgid=&gid={}&page=0".format(url, self.image_id)
+            "Referer": f"{url}?pgid=&gid={self.image_id}&page=0",
         }
 
         num = 0
@@ -184,7 +183,7 @@ class ImagefapImageExtractor(ImagefapExtractor):
         yield Message.Url, url, data
 
     def get_image(self):
-        url = "{}/photo/{}/".format(self.root, self.image_id)
+        url = f"{self.root}/photo/{self.image_id}/"
         page = self.request(url).text
 
         info, pos = text.extract(
@@ -250,7 +249,7 @@ class ImagefapFolderExtractor(ImagefapExtractor):
 
     def items(self):
         for gallery_id, name in self.galleries(self.folder_id):
-            url = "{}/gallery/{}".format(self.root, gallery_id)
+            url = f"{self.root}/gallery/{gallery_id}"
             data = {
                 "gallery_id": gallery_id,
                 "title"     : text.unescape(name),
@@ -262,13 +261,11 @@ class ImagefapFolderExtractor(ImagefapExtractor):
         """Yield gallery IDs and titles of a folder"""
         if folder_id == "-1":
             if self._id:
-                url = "{}/usergallery.php?userid={}&folderid=-1".format(
-                    self.root, self.user)
+                url = f"{self.root}/usergallery.php?userid={self.user}&folderid=-1"
             else:
-                url = "{}/profile/{}/galleries?folderid=-1".format(
-                    self.root, self.user)
+                url = f"{self.root}/profile/{self.user}/galleries?folderid=-1"
         else:
-            url = "{}/organizer/{}/".format(self.root, folder_id)
+            url = f"{self.root}/organizer/{folder_id}/"
 
         params = {"page": 0}
         while True:
@@ -317,19 +314,17 @@ class ImagefapUserExtractor(ImagefapExtractor):
 
         for folder_id in self.folders():
             if folder_id == "-1":
-                url = "{}/profile/{}/galleries?folderid=-1".format(
-                    self.root, self.user)
+                url = f"{self.root}/profile/{self.user}/galleries?folderid=-1"
             else:
-                url = "{}/organizer/{}/".format(self.root, folder_id)
+                url = f"{self.root}/organizer/{folder_id}/"
             yield Message.Queue, url, data
 
     def folders(self):
         """Return a list of folder IDs of a user"""
         if self.user:
-            url = "{}/profile/{}/galleries".format(self.root, self.user)
+            url = f"{self.root}/profile/{self.user}/galleries"
         else:
-            url = "{}/usergallery.php?userid={}".format(
-                self.root, self.user_id)
+            url = f"{self.root}/usergallery.php?userid={self.user_id}"
 
         response = self.request(url)
         self.user = response.url.split("/")[-2]

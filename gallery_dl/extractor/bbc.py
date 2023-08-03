@@ -50,7 +50,7 @@ class BbcGalleryExtractor(GalleryExtractor):
     def images(self, page):
         width = self.config("width")
         width = width - width % 16 if width else 1920
-        dimensions = "/{}xn/".format(width)
+        dimensions = f"/{width}xn/"
 
         return [
             (src.replace("/320x180_b/", dimensions),
@@ -63,7 +63,7 @@ class BbcGalleryExtractor(GalleryExtractor):
         front, _, back = src.partition("/320x180_b/")
         for width in (1920, 1600, 1280, 976):
             if width < max_width:
-                yield "{}/{}xn/{}".format(front, width, back)
+                yield f"{front}/{width}xn/{back}"
 
 
 class BbcProgrammeExtractor(Extractor):
@@ -97,7 +97,7 @@ class BbcProgrammeExtractor(Extractor):
             page = self.request(galleries_url, params=params).text
             for programme_id in text.extract_iter(
                     page, '<a href="https://www.bbc.co.uk/programmes/', '"'):
-                url = "https://www.bbc.co.uk/programmes/" + programme_id
+                url = f"https://www.bbc.co.uk/programmes/{programme_id}"
                 yield Message.Queue, url, data
             if 'rel="next"' not in page:
                 return

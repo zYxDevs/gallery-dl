@@ -65,7 +65,7 @@ class LolisafeAlbumExtractor(LolisafeExtractor):
             yield Message.Url, url, file
 
     def fetch_album(self, album_id):
-        url = "{}/api/album/get/{}".format(self.root, album_id)
+        url = f"{self.root}/api/album/get/{album_id}"
         data = self.request(url).json()
 
         return data["files"], {

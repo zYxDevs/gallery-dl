@@ -53,7 +53,7 @@ class ImgbbExtractor(Extractor):
                 "width"    : text.parse_int(img["width"]),
                 "height"   : text.parse_int(img["height"]),
             }
-            image.update(data)
+            image |= data
             if first:
                 first = False
                 yield Message.Directory, data
@@ -68,7 +68,7 @@ class ImgbbExtractor(Extractor):
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
 
-        url = self.root + "/login"
+        url = f"{self.root}/login"
         page = self.request(url).text
         token = text.extr(page, 'PF.obj.config.auth_token="', '"')
 
@@ -141,7 +141,7 @@ class ImgbbAlbumExtractor(ImgbbExtractor):
         self.album_name = None
         self.album_id = match.group(1)
         self.sort = text.parse_query(match.group(2)).get("sort", "date_desc")
-        self.page_url = "https://ibb.co/album/" + self.album_id
+        self.page_url = f"https://ibb.co/album/{self.album_id}"
 
     def metadata(self, page):
         album, pos = text.extract(page, '"og:title" content="', '"')
@@ -178,19 +178,23 @@ class ImgbbUserExtractor(ImgbbExtractor):
         ImgbbExtractor.__init__(self, match)
         self.user = match.group(1)
         self.sort = text.parse_query(match.group(2)).get("sort", "date_desc")
-        self.page_url = "https://{}.imgbb.com/".format(self.user)
+        self.page_url = f"https://{self.user}.imgbb.com/"
 
     def metadata(self, page):
         return {"user": self.user}
 
     def images(self, page):
         user = text.extr(page, '.obj.resource={"id":"', '"')
-        return self._pagination(page, self.page_url + "json", {
-            "from"      : "user",
-            "userid"    : user,
-            "params_hidden[userid]": user,
-            "params_hidden[from]"  : "user",
-        })
+        return self._pagination(
+            page,
+            f"{self.page_url}json",
+            {
+                "from": "user",
+                "userid": user,
+                "params_hidden[userid]": user,
+                "params_hidden[from]": "user",
+            },
+        )
 
 
 class ImgbbImageExtractor(ImgbbExtractor):
@@ -215,7 +219,7 @@ class ImgbbImageExtractor(ImgbbExtractor):
         self.image_id = match.group(1)
 
     def items(self):
-        url = "https://ibb.co/" + self.image_id
+        url = f"https://ibb.co/{self.image_id}"
         extr = text.extract_from(self.request(url).text)
 
         image = {

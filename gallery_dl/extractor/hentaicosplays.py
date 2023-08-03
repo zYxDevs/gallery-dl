@@ -55,7 +55,7 @@ class HentaicosplaysGalleryExtractor(GalleryExtractor):
     def __init__(self, match):
         root, self.site, self.slug = match.groups()
         self.root = text.ensure_http_scheme(root)
-        url = "{}/story/{}/".format(self.root, self.slug)
+        url = f"{self.root}/story/{self.slug}/"
         GalleryExtractor.__init__(self, match, url)
 
     def _init(self):

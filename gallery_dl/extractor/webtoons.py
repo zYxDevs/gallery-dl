@@ -72,9 +72,9 @@ class WebtoonsEpisodeExtractor(WebtoonsBase, GalleryExtractor):
 
     def __init__(self, match):
         self.path, self.lang, self.genre, self.comic, self.query = \
-            match.groups()
+                match.groups()
 
-        url = "{}/{}/viewer?{}".format(self.root, self.path, self.query)
+        url = f"{self.root}/{self.path}/viewer?{self.query}"
         GalleryExtractor.__init__(self, match, url)
 
     def _init(self):
@@ -159,8 +159,7 @@ class WebtoonsComicExtractor(WebtoonsBase, Extractor):
         data = {"_extractor": WebtoonsEpisodeExtractor}
 
         while True:
-            path = "/{}/list?title_no={}&page={}".format(
-                self.path, self.title_no, self.page_no)
+            path = f"/{self.path}/list?title_no={self.title_no}&page={self.page_no}"
 
             if page and path not in page:
                 return

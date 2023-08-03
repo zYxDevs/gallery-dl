@@ -34,10 +34,8 @@ class Job():
 
         cfgpath = []
         if parent and parent.extractor.category != extr.category:
-            cat = "{}>{}".format(
-                parent.extractor.category, extr.category)
-            cfgpath.append((cat, extr.subcategory))
-            cfgpath.append((extr.category, extr.subcategory))
+            cat = f"{parent.extractor.category}>{extr.category}"
+            cfgpath.extend(((cat, extr.subcategory), (extr.category, extr.subcategory)))
         if extr.basecategory:
             if not cfgpath:
                 cfgpath.append((extr.category, extr.subcategory))
@@ -47,8 +45,7 @@ class Job():
             extr.config = extr._config_shared
             extr.config_accumulate = extr._config_shared_accumulate
 
-        actions = extr.config("actions")
-        if actions:
+        if actions := extr.config("actions"):
             from .actions import parse
             self._logger_actions = parse(actions)
             self._wrap_logger = self._wrap_logger_actions
@@ -79,10 +76,8 @@ class Job():
         version_info = extr.config("version-metadata")
         metadata_path = extr.config("path-metadata")
 
-        # user-supplied metadata
-        kwdict = extr.config("keywords")
-        if kwdict:
-            self.kwdict.update(kwdict)
+        if kwdict := extr.config("keywords"):
+            self.kwdict |= kwdict
         if metadata_path:
             self.kwdict[metadata_path] = path_proxy
         if version_info:
@@ -102,9 +97,7 @@ class Job():
         log = extractor.log
         msg = None
 
-        sleep = util.build_duration_func(
-            extractor.config("sleep-extractor"))
-        if sleep:
+        if sleep := util.build_duration_func(extractor.config("sleep-extractor")):
             extractor.sleep(sleep(), "extractor")
 
         try:
@@ -190,10 +183,10 @@ class Job():
     def _prepare_predicates(self, target, skip=True):
         predicates = []
 
-        if self.extractor.config(target + "-unique"):
+        if self.extractor.config(f"{target}-unique"):
             predicates.append(util.UniquePredicate())
 
-        pfilter = self.extractor.config(target + "-filter")
+        pfilter = self.extractor.config(f"{target}-filter")
         if pfilter:
             try:
                 pred = util.FilterPredicate(pfilter, target)
@@ -202,8 +195,7 @@ class Job():
             else:
                 predicates.append(pred)
 
-        prange = self.extractor.config(target + "-range")
-        if prange:
+        if prange := self.extractor.config(f"{target}-range"):
             try:
                 pred = util.RangePredicate(prange)
             except ValueError as exc:
@@ -332,8 +324,7 @@ class DownloadJob(Job):
             return
         self.visited.add(url)
 
-        cls = kwdict.get("_extractor")
-        if cls:
+        if cls := kwdict.get("_extractor"):
             extr = cls.from_url(url)
         else:
             extr = extractor.find(url)
@@ -353,8 +344,7 @@ class DownloadJob(Job):
             else:
                 extr._parentdir = pextr._parentdir
 
-            pmeta = pextr.config("parent-metadata")
-            if pmeta:
+            if pmeta := pextr.config("parent-metadata"):
                 if isinstance(pmeta, str):
                     data = self.kwdict.copy()
                     if kwdict:
@@ -385,8 +375,7 @@ class DownloadJob(Job):
         if self.archive:
             self.archive.close()
 
-        pathfmt = self.pathfmt
-        if pathfmt:
+        if pathfmt := self.pathfmt:
             hooks = self.hooks
             if "post-after" in hooks:
                 for callback in hooks["post-after"]:
@@ -412,8 +401,7 @@ class DownloadJob(Job):
     def download(self, url):
         """Download 'url'"""
         scheme = url.partition(":")[0]
-        downloader = self.get_downloader(scheme)
-        if downloader:
+        if downloader := self.get_downloader(scheme):
             try:
                 return downloader.download(url, self.pathfmt)
             except OSError as exc:
@@ -459,8 +447,7 @@ class DownloadJob(Job):
             # monkey-patch method to do nothing and always return True
             self.download = pathfmt.fix_extension
 
-        archive = cfg("archive")
-        if archive:
+        if archive := cfg("archive"):
             archive = util.expand_path(archive)
             archive_format = (cfg("archive-prefix", extr.category) +
                               cfg("archive-format", extr.archive_fmt))
@@ -477,8 +464,7 @@ class DownloadJob(Job):
             else:
                 extr.log.debug("Using download archive '%s'", archive)
 
-        skip = cfg("skip", True)
-        if skip:
+        if skip := cfg("skip", True):
             self._skipexc = None
             if skip == "enumerate":
                 pathfmt.check_file = pathfmt._enum_file
@@ -500,8 +486,7 @@ class DownloadJob(Job):
         if not cfg("postprocess", True):
             return
 
-        postprocessors = extr.config_accumulate("postprocessors")
-        if postprocessors:
+        if postprocessors := extr.config_accumulate("postprocessors"):
             self.hooks = collections.defaultdict(list)
 
             pp_log = self.get_logger("postprocessor")
@@ -572,8 +557,8 @@ class DownloadJob(Job):
             clist = self.extractor.config("blacklist")
             negate = True
             special = util.SPECIAL_EXTRACTORS
-            if clist is None:
-                clist = (self.extractor.category,)
+        if clist is None:
+            clist = (self.extractor.category,)
 
         return util.build_extractor_filter(clist, negate, special)
 
@@ -619,10 +604,7 @@ class KeywordJob(Job):
         self.print_kwdict(kwdict)
 
     def handle_queue(self, url, kwdict):
-        extr = None
-        if "_extractor" in kwdict:
-            extr = kwdict["_extractor"].from_url(url)
-
+        extr = kwdict["_extractor"].from_url(url) if "_extractor" in kwdict else None
         if not util.filter_dict(kwdict):
             self.extractor.log.info(
                 "This extractor only spawns other extractors "
@@ -653,7 +635,7 @@ class KeywordJob(Job):
         if markers is None:
             markers = {markerid}
         elif markerid in markers:
-            write("{}\n  <circular reference>\n".format(prefix[:-2]))
+            write(f"{prefix[:-2]}\n  <circular reference>\n")
             return  # ignore circular reference
         else:
             markers.add(markerid)
@@ -664,13 +646,13 @@ class KeywordJob(Job):
             key = prefix + key + suffix
 
             if isinstance(value, dict):
-                self.print_kwdict(value, key + "['", markers)
+                self.print_kwdict(value, f"{key}['", markers)
 
             elif isinstance(value, list):
                 if not value:
                     pass
                 elif isinstance(value[0], dict):
-                    self.print_kwdict(value[0], key + "[N]['", markers)
+                    self.print_kwdict(value[0], f"{key}[N]['", markers)
                 else:
                     fmt = ("  {:>%s} {}\n" % len(str(len(value)))).format
                     write(key + "[N]\n")
@@ -679,7 +661,7 @@ class KeywordJob(Job):
 
             else:
                 # string or number
-                write("{}\n  {}\n".format(key, value))
+                write(f"{key}\n  {value}\n")
 
         markers.remove(markerid)
 
@@ -703,11 +685,10 @@ class UrlJob(Job):
         stdout_write(url + "\n")
         if "_fallback" in kwdict:
             for url in kwdict["_fallback"]:
-                stdout_write("| " + url + "\n")
+                stdout_write(f"| {url}" + "\n")
 
     def handle_queue(self, url, kwdict):
-        cls = kwdict.get("_extractor")
-        if cls:
+        if cls := kwdict.get("_extractor"):
             extr = cls.from_url(url)
         else:
             extr = extractor.find(url)
@@ -740,20 +721,16 @@ class InfoJob(Job):
         return 0
 
     def _print_multi(self, title, *values):
-        stdout_write("{}\n  {}\n\n".format(
-            title, " / ".join(map(util.json_dumps, values))))
+        stdout_write(f'{title}\n  {" / ".join(map(util.json_dumps, values))}\n\n')
 
     def _print_config(self, title, optname, value):
         optval = self.extractor.config(optname, util.SENTINEL)
         if optval is not util.SENTINEL:
             stdout_write(
-                "{} (custom):\n  {}\n{} (default):\n  {}\n\n".format(
-                    title, util.json_dumps(optval),
-                    title, util.json_dumps(value)))
+                f"{title} (custom):\n  {util.json_dumps(optval)}\n{title} (default):\n  {util.json_dumps(value)}\n\n"
+            )
         elif value:
-            stdout_write(
-                "{} (default):\n  {}\n\n".format(
-                    title, util.json_dumps(value)))
+            stdout_write(f"{title} (default):\n  {util.json_dumps(value)}\n\n")
 
 
 class DataJob(Job):
@@ -770,9 +747,7 @@ class DataJob(Job):
 
     def run(self):
         extractor = self.extractor
-        sleep = util.build_duration_func(
-            extractor.config("sleep-extractor"))
-        if sleep:
+        if sleep := util.build_duration_func(extractor.config("sleep-extractor")):
             extractor.sleep(sleep(), "extractor")
 
         # collect data

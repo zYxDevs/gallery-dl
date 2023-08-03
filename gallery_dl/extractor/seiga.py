@@ -41,7 +41,7 @@ class SeigaExtractor(Extractor):
 
     def get_image_url(self, image_id):
         """Get url for an image with id 'image_id'"""
-        url = "{}/image/source/{}".format(self.root, image_id)
+        url = f"{self.root}/image/source/{image_id}"
         response = self.request(
             url, method="HEAD", allow_redirects=False, notfound="image")
         location = response.headers["location"]
@@ -118,7 +118,7 @@ class SeigaUserExtractor(SeigaExtractor):
         }
 
     def get_images(self):
-        url = "{}/user/illust/{}".format(self.root, self.user_id)
+        url = f"{self.root}/user/illust/{self.user_id}"
         params = {"sort": self.order, "page": self.start_page,
                   "target": "illust_all"}
 
@@ -189,7 +189,7 @@ class SeigaImageExtractor(SeigaExtractor):
         self.cookies.set(
             "skip_fetish_warning", "1", domain="seiga.nicovideo.jp")
 
-        url = "{}/seiga/im{}".format(self.root, self.image_id)
+        url = f"{self.root}/seiga/im{self.image_id}"
         page = self.request(url, notfound="image").text
 
         data = text.extract_all(page, (

@@ -37,8 +37,7 @@ class KabeuchiUserExtractor(Extractor):
         self.user_id = match.group(1)
 
     def items(self):
-        base = "{}/accounts/upfile/{}/{}/".format(
-            self.root, self.user_id[-1], self.user_id)
+        base = f"{self.root}/accounts/upfile/{self.user_id[-1]}/{self.user_id}/"
         keys = ("image1", "image2", "image3", "image4", "image5", "image6")
 
         for post in self.posts():
@@ -58,15 +57,15 @@ class KabeuchiUserExtractor(Extractor):
                 yield Message.Url, url, text.nameext_from_url(name, post)
 
     def posts(self):
-        url = "{}/mypage/?id={}".format(self.root, self.user_id)
+        url = f"{self.root}/mypage/?id={self.user_id}"
         response = self.request(url)
-        if response.history and response.url == self.root + "/":
+        if response.history and response.url == f"{self.root}/":
             raise exception.NotFoundError("user")
         target_id = text.extr(response.text, 'user_friend_id = "', '"')
         return self._pagination(target_id)
 
     def _pagination(self, target_id):
-        url = "{}/get_posts.php".format(self.root)
+        url = f"{self.root}/get_posts.php"
         data = {
             "user_id"    : "0",
             "target_id"  : target_id,

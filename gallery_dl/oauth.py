@@ -82,7 +82,8 @@ class OAuth1Client(requests.auth.AuthBase):
         oauth_params.append(("oauth_signature", signature))
 
         request.headers["Authorization"] = "OAuth " + ",".join(
-            key + '="' + value + '"' for key, value in oauth_params)
+            f'{key}="{value}"' for key, value in oauth_params
+        )
 
         return request
 

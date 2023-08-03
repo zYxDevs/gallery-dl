@@ -31,18 +31,17 @@ class ReadcomiconlineBase():
             response = Extractor.request(self, url, **kwargs)
             if not response.history or "/AreYouHuman" not in response.url:
                 return response
-            if self.config("captcha", "stop") == "wait":
-                self.log.warning(
-                    "Redirect to \n%s\nVisit this URL in your browser, solve "
-                    "the CAPTCHA, and press ENTER to continue", response.url)
-                try:
-                    input()
-                except (EOFError, OSError):
-                    pass
-            else:
+            if self.config("captcha", "stop") != "wait":
                 raise exception.StopExtraction(
                     "Redirect to \n%s\nVisit this URL in your browser and "
                     "solve the CAPTCHA to continue", response.url)
+            self.log.warning(
+                "Redirect to \n%s\nVisit this URL in your browser, solve "
+                "the CAPTCHA, and press ENTER to continue", response.url)
+            try:
+                input()
+            except (EOFError, OSError):
+                pass
 
 
 class ReadcomiconlineIssueExtractor(ReadcomiconlineBase, ChapterExtractor):
@@ -69,7 +68,7 @@ class ReadcomiconlineIssueExtractor(ReadcomiconlineBase, ChapterExtractor):
         else:
             params["quality"] = str(quality)
 
-        self.gallery_url += "&".join(k + "=" + v for k, v in params.items())
+        self.gallery_url += "&".join(f"{k}={v}" for k, v in params.items())
         self.issue_id = params.get("id")
 
     def metadata(self, page):
@@ -78,7 +77,7 @@ class ReadcomiconlineIssueExtractor(ReadcomiconlineBase, ChapterExtractor):
         match = re.match(r"(?:Issue )?#(\d+)|(.+)", iinfo)
         return {
             "comic": comic,
-            "issue": match.group(1) or match.group(2),
+            "issue": match[1] or match[2],
             "issue_id": text.parse_int(self.issue_id),
             "lang": "en",
             "language": "English",
@@ -115,7 +114,7 @@ class ReadcomiconlineComicExtractor(ReadcomiconlineBase, MangaExtractor):
         page , pos = text.extract(page, ' class="listing">', '</table>', pos)
 
         comic = comic.rpartition("information")[0].strip()
-        needle = ' title="Read {} '.format(comic)
+        needle = f' title="Read {comic} '
         comic = text.unescape(comic)
 
         for item in text.extract_iter(page, ' href="', ' comic online '):
@@ -143,8 +142,8 @@ def beau(url):
     containsS0 = "=s0" in url
     url = url[:-3 if containsS0 else -6]
     url = url[4:22] + url[25:]
-    url = url[0:-6] + url[-2:]
+    url = url[:-6] + url[-2:]
     url = binascii.a2b_base64(url).decode()
-    url = url[0:13] + url[17:]
-    url = url[0:-2] + ("=s0" if containsS0 else "=s1600")
-    return "https://2.bp.blogspot.com/" + url + sep + rest
+    url = url[:13] + url[17:]
+    url = url[:-2] + ("=s0" if containsS0 else "=s1600")
+    return f"https://2.bp.blogspot.com/{url}{sep}{rest}"

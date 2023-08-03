@@ -30,10 +30,7 @@ class ImagebamExtractor(Extractor):
         url, pos = text.extract(page, '<img src="https://images', '"')
         filename = text.unescape(text.extract(page, 'alt="', '"', pos)[0])
 
-        data = {
-            "url"      : "https://images" + url,
-            "image_key": path.rpartition("/")[2],
-        }
+        data = {"url": f"https://images{url}", "image_key": path.rpartition("/")[2]}
         data["filename"], _, data["extension"] = filename.rpartition(".")
         return data
 
@@ -97,8 +94,7 @@ class ImagebamGalleryExtractor(ImagebamExtractor):
             paths += findall(page)
             pos = page.find('rel="next" aria-label="Next')
             if pos > 0:
-                url = text.rextract(page, 'href="', '"', pos)[0]
-                if url:
+                if url := text.rextract(page, 'href="', '"', pos)[0]:
                     page = self.request(url).text
                     continue
             return paths

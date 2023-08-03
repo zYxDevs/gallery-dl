@@ -120,7 +120,7 @@ class PathFormat():
             basedir = config("base-directory")
             sep = os.sep
             if basedir is None:
-                basedir = "." + sep + "gallery-dl" + sep
+                basedir = f".{sep}gallery-dl{sep}"
             elif basedir:
                 basedir = util.expand_path(basedir)
                 altsep = os.altsep
@@ -142,8 +142,7 @@ class PathFormat():
             def func(x, c=chars, r=repl):
                 return x.replace(c, r)
         else:
-            return functools.partial(
-                re.compile("[" + chars + "]").sub, repl)
+            return functools.partial(re.compile(f"[{chars}]").sub, repl)
         return func
 
     def open(self, mode="wb"):
@@ -168,7 +167,7 @@ class PathFormat():
         num = 1
         try:
             while True:
-                prefix = format(num) + "."
+                prefix = f"{format(num)}."
                 self.kwdict["extension"] = prefix + self.extension
                 self.build_path()
                 os.stat(self.realpath)  # raises OSError if file doesn't exist
@@ -183,8 +182,7 @@ class PathFormat():
         self.kwdict = kwdict
         sep = os.sep
 
-        segments = self.build_directory(kwdict)
-        if segments:
+        if segments := self.build_directory(kwdict):
             self.directory = directory = self.basedirectory + self.clean_path(
                 sep.join(segments) + sep)
         else:
@@ -222,7 +220,7 @@ class PathFormat():
         try:
             if not self.extension:
                 self.kwdict["extension"] = \
-                    self.prefix + self.extension_map("", "")
+                        self.prefix + self.extension_map("", "")
                 self.build_path()
                 if self.path[-1] == ".":
                     self.path = self.path[:-1]
@@ -230,8 +228,8 @@ class PathFormat():
             elif not self.temppath:
                 self.build_path()
         except Exception:
-            self.path = self.directory + "?"
-            self.realpath = self.temppath = self.realdirectory + "?"
+            self.path = f"{self.directory}?"
+            self.realpath = self.temppath = f"{self.realdirectory}?"
         return True
 
     def build_filename(self, kwdict):
@@ -344,6 +342,5 @@ class PathFormat():
                     os.unlink(self.temppath)
                 break
 
-        mtime = self.kwdict.get("_mtime")
-        if mtime:
+        if mtime := self.kwdict.get("_mtime"):
             util.set_mtime(self.realpath, mtime)

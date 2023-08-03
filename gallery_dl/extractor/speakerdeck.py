@@ -46,15 +46,12 @@ class SpeakerdeckPresentationExtractor(Extractor):
     def get_job_metadata(self):
         """Collect metadata for extractor-job"""
         url = "https://speakerdeck.com/oembed.json"
-        params = {
-            "url": "https://speakerdeck.com/" + self.user +
-                   "/" + self.presentation,
-        }
+        params = {"url": f"https://speakerdeck.com/{self.user}/{self.presentation}"}
 
         data = self.request(url, params=params).json()
 
         self.presentation_id, pos = \
-            text.extract(data["html"], 'src="//speakerdeck.com/player/', '"')
+                text.extract(data["html"], 'src="//speakerdeck.com/player/', '"')
 
         return {
             "user": self.user,

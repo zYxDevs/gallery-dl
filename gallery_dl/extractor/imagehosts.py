@@ -26,8 +26,7 @@ class ImagehostImageExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.page_url = "http{}://{}".format(
-            "s" if self._https else "", match.group(1))
+        self.page_url = f'http{"s" if self._https else ""}://{match.group(1)}'
         self.token = match.group(2)
 
         if self._params == "simple":
@@ -56,7 +55,7 @@ class ImagehostImageExtractor(Extractor):
         data = text.nameext_from_url(filename, {"token": self.token})
         data.update(self.metadata(page))
         if self._https and url.startswith("http:"):
-            url = "https:" + url[5:]
+            url = f"https:{url[5:]}"
 
         yield Message.Directory, data
         yield Message.Url, url, data
@@ -174,8 +173,8 @@ class AcidimgImageExtractor(ImagehostImageExtractor):
         url, pos = text.extract(page, "<img class='centred' src='", "'")
         if not url:
             url, pos = text.extract(page, '<img class="centred" src="', '"')
-            if not url:
-                raise exception.NotFoundError("image")
+        if not url:
+            raise exception.NotFoundError("image")
 
         filename, pos = text.extract(page, "alt='", "'", pos)
         if not filename:

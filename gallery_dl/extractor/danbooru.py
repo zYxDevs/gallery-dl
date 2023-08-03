@@ -29,7 +29,7 @@ class DanbooruExtractor(BaseExtractor):
 
         threshold = self.config("threshold")
         if isinstance(threshold, int):
-            self.threshold = 1 if threshold < 1 else threshold
+            self.threshold = max(threshold, 1)
         else:
             self.threshold = self.per_page
 
@@ -48,13 +48,12 @@ class DanbooruExtractor(BaseExtractor):
     def items(self):
         self.session.headers["User-Agent"] = util.USERAGENT
 
-        includes = self.config("metadata")
-        if includes:
+        if includes := self.config("metadata"):
             if isinstance(includes, (list, tuple)):
                 includes = ",".join(includes)
             elif not isinstance(includes, str):
                 includes = "artist_commentary,children,notes,parent,uploader"
-            self.includes = includes + ",id"
+            self.includes = f"{includes},id"
 
         data = self.metadata()
         for post in self.posts():
@@ -128,7 +127,7 @@ class DanbooruExtractor(BaseExtractor):
                 return
 
             if prefix:
-                params["page"] = "{}{}".format(prefix, posts[-1]["id"])
+                params["page"] = f'{prefix}{posts[-1]["id"]}'
             elif params["page"]:
                 params["page"] += 1
             else:
@@ -136,8 +135,8 @@ class DanbooruExtractor(BaseExtractor):
             first = False
 
     def _ugoira_frames(self, post):
-        data = self.request("{}/posts/{}.json?only=media_metadata".format(
-            self.root, post["id"])
+        data = self.request(
+            f'{self.root}/posts/{post["id"]}.json?only=media_metadata'
         ).json()["media_metadata"]["metadata"]
 
         ext = data["ZIP:ZipFileName"].rpartition(".")[2]
@@ -218,7 +217,7 @@ class DanbooruTagExtractor(DanbooruExtractor):
         prefix = "b"
         for tag in self.tags.split():
             if tag.startswith("order:"):
-                if tag == "order:id" or tag == "order:id_asc":
+                if tag in ["order:id", "order:id_asc"]:
                     prefix = "a"
                 elif tag == "order:id_desc":
                     prefix = "b"
@@ -259,14 +258,14 @@ class DanbooruPoolExtractor(DanbooruExtractor):
         self.pool_id = match.group(match.lastindex)
 
     def metadata(self):
-        url = "{}/pools/{}.json".format(self.root, self.pool_id)
+        url = f"{self.root}/pools/{self.pool_id}.json"
         pool = self.request(url).json()
         pool["name"] = pool["name"].replace("_", " ")
         self.post_ids = pool.pop("post_ids", ())
         return {"pool": pool}
 
     def posts(self):
-        params = {"tags": "pool:" + self.pool_id}
+        params = {"tags": f"pool:{self.pool_id}"}
         return self._pagination("/posts.json", params, "b")
 
 
@@ -301,7 +300,7 @@ class DanbooruPostExtractor(DanbooruExtractor):
         self.post_id = match.group(match.lastindex)
 
     def posts(self):
-        url = "{}/posts/{}.json".format(self.root, self.post_id)
+        url = f"{self.root}/posts/{self.post_id}.json"
         post = self.request(url).json()
         if self.includes:
             params = {"only": self.includes}

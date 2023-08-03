@@ -38,7 +38,7 @@ class GalleryDLException(Exception):
         if not message:
             message = self.default
         elif isinstance(message, Exception):
-            message = "{}: {}".format(message.__class__.__name__, message)
+            message = f"{message.__class__.__name__}: {message}"
         if self.msgfmt and fmt:
             message = self.msgfmt.format(message)
         Exception.__init__(self, message)

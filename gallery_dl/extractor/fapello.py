@@ -51,7 +51,7 @@ class FapelloPostExtractor(Extractor):
         self.model, self.id = match.groups()
 
     def items(self):
-        url = "https://fapello.com/{}/{}/".format(self.model, self.id)
+        url = f"https://fapello.com/{self.model}/{self.id}/"
         page = text.extr(
             self.request(url, allow_redirects=False).text,
             'class="uk-align-center"', "</div>", None)
@@ -94,8 +94,7 @@ class FapelloModelExtractor(Extractor):
         num = 1
         data = {"_extractor": FapelloPostExtractor}
         while True:
-            url = "https://fapello.com/ajax/model/{}/page-{}/".format(
-                self.model, num)
+            url = f"https://fapello.com/ajax/model/{self.model}/page-{num}/"
             page = self.request(url).text
             if not page:
                 return
@@ -141,8 +140,7 @@ class FapelloPathExtractor(Extractor):
             data = {"_extractor": FapelloPostExtractor}
 
         while True:
-            page = self.request("https://fapello.com/ajax/{}/page-{}/".format(
-                self.path, num)).text
+            page = self.request(f"https://fapello.com/ajax/{self.path}/page-{num}/").text
             if not page:
                 return
 

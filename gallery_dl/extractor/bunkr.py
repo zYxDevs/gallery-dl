@@ -67,7 +67,7 @@ class BunkrAlbumExtractor(LolisafeAlbumExtractor):
 
     def fetch_album(self, album_id):
         # album metadata
-        page = self.request(self.root + "/a/" + self.album_id).text
+        page = self.request(f"{self.root}/a/{self.album_id}").text
         info = text.split_html(text.extr(
             page, "<h1", "</div>").partition(">")[2])
         count, _, size = info[1].split(None, 2)
@@ -76,14 +76,14 @@ class BunkrAlbumExtractor(LolisafeAlbumExtractor):
         cdn = None
         files = []
         append = files.append
-        headers = {"Referer": self.root + "/"}
+        headers = {"Referer": f"{self.root}/"}
 
         pos = page.index('class="grid-images')
         for url in text.extract_iter(page, '<a href="', '"', pos):
             if url.startswith("/"):
                 if not cdn:
                     # fetch cdn root from download page
-                    durl = "{}/d/{}".format(self.root, url[3:])
+                    durl = f"{self.root}/d/{url[3:]}"
                     cdn = text.extr(self.request(
                         durl).text, 'link.href = "', '"')
                     cdn = cdn[:cdn.index("/", 8)]

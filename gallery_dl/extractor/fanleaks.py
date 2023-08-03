@@ -70,7 +70,7 @@ class FanleaksPostExtractor(FanleaksExtractor):
         self.id = match.group(2)
 
     def items(self):
-        url = "{}/{}/{}".format(self.root, self.model_id, self.id)
+        url = f"{self.root}/{self.model_id}/{self.id}"
         return self.extract_post(url)
 
 
@@ -98,8 +98,7 @@ class FanleaksModelExtractor(FanleaksExtractor):
 
     def items(self):
         page_num = 1
-        page = self.request(
-            self.root + "/" + self.model_id, notfound="model").text
+        page = self.request(f"{self.root}/{self.model_id}", notfound="model").text
         data = {
             "model_id": self.model_id,
             "model"   : text.unescape(
@@ -108,14 +107,14 @@ class FanleaksModelExtractor(FanleaksExtractor):
         }
         page_url = text.extr(page, "url: '", "'")
         while True:
-            page = self.request("{}{}".format(page_url, page_num)).text
+            page = self.request(f"{page_url}{page_num}").text
             if not page:
                 return
 
             for item in text.extract_iter(page, '<a href="/', "</a>"):
                 self.id = id = text.extr(item, "/", '"')
                 if "/icon-play.svg" in item:
-                    url = "{}/{}/{}".format(self.root, self.model_id, id)
+                    url = f"{self.root}/{self.model_id}/{id}"
                     yield from self.extract_post(url)
                     continue
 

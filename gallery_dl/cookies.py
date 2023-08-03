@@ -42,7 +42,7 @@ def load_cookies(cookiejar, browser_specification):
     elif browser_name in SUPPORTED_BROWSERS_CHROMIUM:
         load_cookies_chrome(cookiejar, browser_name, profile, keyring, domain)
     else:
-        raise ValueError("unknown browser '{}'".format(browser_name))
+        raise ValueError(f"unknown browser '{browser_name}'")
 
 
 def load_cookies_firefox(cookiejar, profile=None, container=None, domain=None):
@@ -57,15 +57,15 @@ def load_cookies_firefox(cookiejar, profile=None, container=None, domain=None):
             sql += " WHERE NOT INSTR(originAttributes,'userContextId=')"
         elif container_id:
             sql += " WHERE originAttributes LIKE ? OR originAttributes LIKE ?"
-            uid = "%userContextId={}".format(container_id)
-            parameters = (uid, uid + "&%")
+            uid = f"%userContextId={container_id}"
+            parameters = uid, f"{uid}&%"
         elif domain:
             if domain[0] == ".":
                 sql += " WHERE host == ? OR host LIKE ?"
-                parameters = (domain[1:], "%" + domain)
+                parameters = domain[1:], f"%{domain}"
             else:
                 sql += " WHERE host == ? OR host == ?"
-                parameters = (domain, "." + domain)
+                parameters = domain, f".{domain}"
 
         set_cookie = cookiejar.set_cookie
         for name, value, domain, path, secure, expires in db.execute(
@@ -108,27 +108,29 @@ def load_cookies_chrome(cookiejar, browser_name, profile=None,
         if domain:
             if domain[0] == ".":
                 condition = " WHERE host_key == ? OR host_key LIKE ?"
-                parameters = (domain[1:], "%" + domain)
+                parameters = domain[1:], f"%{domain}"
             else:
                 condition = " WHERE host_key == ? OR host_key == ?"
-                parameters = (domain, "." + domain)
+                parameters = domain, f".{domain}"
         else:
             condition = ""
             parameters = ()
 
         try:
             rows = db.execute(
-                "SELECT host_key, name, value, encrypted_value, path, "
-                "expires_utc, is_secure FROM cookies" + condition, parameters)
+                f"SELECT host_key, name, value, encrypted_value, path, expires_utc, is_secure FROM cookies{condition}",
+                parameters,
+            )
         except sqlite3.OperationalError:
             rows = db.execute(
-                "SELECT host_key, name, value, encrypted_value, path, "
-                "expires_utc, secure FROM cookies" + condition, parameters)
+                f"SELECT host_key, name, value, encrypted_value, path, expires_utc, secure FROM cookies{condition}",
+                parameters,
+            )
 
-        set_cookie = cookiejar.set_cookie
         failed_cookies = 0
         unencrypted_cookies = 0
 
+        set_cookie = cookiejar.set_cookie
         for domain, name, value, enc_value, path, expires, secure in rows:
 
             if not value and enc_value:  # encrypted
@@ -151,7 +153,7 @@ def load_cookies_chrome(cookiejar, browser_name, profile=None,
             ))
 
     if failed_cookies > 0:
-        failed_message = " ({} could not be decrypted)".format(failed_cookies)
+        failed_message = f" ({failed_cookies} could not be decrypted)"
     else:
         failed_message = ""
 
@@ -175,8 +177,9 @@ def _firefox_cookies_database(profile=None, container=None):
 
     path = _find_most_recently_used_file(search_root, "cookies.sqlite")
     if path is None:
-        raise FileNotFoundError("Unable to find Firefox cookies database in "
-                                "{}".format(search_root))
+        raise FileNotFoundError(
+            f"Unable to find Firefox cookies database in {search_root}"
+        )
     _log_debug("Extracting cookies from %s", path)
 
     if container == "none":
@@ -198,13 +201,14 @@ def _firefox_cookies_database(profile=None, container=None):
             identities = ()
 
         for context in identities:
-            if container == context.get("name") or container == text.extr(
-                    context.get("l10nID", ""), "userContext", ".label"):
+            if container in [
+                context.get("name"),
+                text.extr(context.get("l10nID", ""), "userContext", ".label"),
+            ]:
                 container_id = context["userContextId"]
                 break
         else:
-            raise ValueError("Unable to find Firefox container '{}'".format(
-                container))
+            raise ValueError(f"Unable to find Firefox container '{container}'")
         _log_debug("Only loading cookies from container '%s' (ID %s)",
                    container, container_id)
     else:
@@ -255,7 +259,7 @@ def _safari_parse_cookies_page(data, cookiejar, domain=None):
 
     p.skip_to(record_offsets[0], "unknown page header field")
 
-    for i, record_offset in enumerate(record_offsets):
+    for record_offset in record_offsets:
         p.skip_to(record_offset, "space between records")
         record_length = _safari_parse_cookies_record(
             data[record_offset:], cookiejar, domain)
@@ -286,9 +290,8 @@ def _safari_parse_cookies_record(data, cookiejar, host=None):
             if host[0] == ".":
                 if host[1:] != domain and not domain.endswith(host):
                     return record_size
-            else:
-                if host != domain and ("." + host) != domain:
-                    return record_size
+            elif host != domain and f".{host}" != domain:
+                return record_size
 
         p.skip_to(name_offset)
         name = p.read_cstring()
@@ -332,8 +335,9 @@ def _chrome_cookies_database(profile, config):
 
     path = _find_most_recently_used_file(search_root, "Cookies")
     if path is None:
-        raise FileNotFoundError("Unable to find {} cookies database in "
-                                "'{}'".format(config["browser"], search_root))
+        raise FileNotFoundError(
+            f"""Unable to find {config["browser"]} cookies database in '{search_root}'"""
+        )
     return path
 
 
@@ -507,13 +511,13 @@ class MacChromeCookieDecryptor(ChromeCookieDecryptor):
 
     def decrypt(self, encrypted_value):
         version = encrypted_value[:3]
-        ciphertext = encrypted_value[3:]
-
         if version == b"v10":
             self._cookie_counts["v10"] += 1
             if self._v10_key is None:
                 _log_warning("Unable to decrypt v10 cookies: no key found")
                 return None
+
+            ciphertext = encrypted_value[3:]
 
             return _decrypt_aes_cbc(ciphertext, self._v10_key)
 
@@ -635,15 +639,17 @@ def _get_kwallet_password(browser_keyring_name):
     try:
         proc, stdout = Popen_communicate(
             "kwallet-query",
-            "--read-password", browser_keyring_name + " Safe Storage",
-            "--folder", browser_keyring_name + " Keys",
+            "--read-password",
+            f"{browser_keyring_name} Safe Storage",
+            "--folder",
+            f"{browser_keyring_name} Keys",
             network_wallet,
         )
 
         if proc.returncode != 0:
-            _log_error("kwallet-query failed with return code {}. "
-                       "Please consult the kwallet-query man page "
-                       "for details".format(proc.returncode))
+            _log_error(
+                f"kwallet-query failed with return code {proc.returncode}. Please consult the kwallet-query man page for details"
+            )
             return b""
 
         if stdout.lower().startswith(b"failed to read"):
@@ -682,7 +688,7 @@ def _get_gnome_keyring_password(browser_keyring_name):
     # https://github.com/jaraco/keyring/issues/556
     with contextlib.closing(secretstorage.dbus_init()) as con:
         col = secretstorage.get_default_collection(con)
-        label = browser_keyring_name + " Safe Storage"
+        label = f"{browser_keyring_name} Safe Storage"
         for item in col.get_all_items():
             if item.get_label() == label:
                 return item.get_secret()
@@ -711,7 +717,7 @@ def _get_linux_keyring_password(browser_keyring_name, keyring):
         # when basic text is chosen, all cookies are stored as v10
         # so no keyring password is required
         return None
-    assert False, "Unknown keyring " + keyring
+    assert False, f"Unknown keyring {keyring}"
 
 
 def _get_mac_keyring_password(browser_keyring_name):
@@ -719,10 +725,13 @@ def _get_mac_keyring_password(browser_keyring_name):
                "password from OSX keychain")
     try:
         proc, stdout = Popen_communicate(
-            "security", "find-generic-password",
-            "-w",  # write password to stdout
-            "-a", browser_keyring_name,  # match "account"
-            "-s", browser_keyring_name + " Safe Storage",  # match "service"
+            "security",
+            "find-generic-password",
+            "-w",
+            "-a",
+            browser_keyring_name,
+            "-s",
+            f"{browser_keyring_name} Safe Storage",
         )
 
         if stdout[-1:] == b"\n":
@@ -769,7 +778,7 @@ class DataParser:
 
     def read_bytes(self, num_bytes):
         if num_bytes < 0:
-            raise ParserError("invalid read of {} bytes".format(num_bytes))
+            raise ParserError(f"invalid read of {num_bytes} bytes")
         end = self.cursor + num_bytes
         if end > len(self._data):
             raise ParserError("reached end of input")
@@ -780,8 +789,7 @@ class DataParser:
     def expect_bytes(self, expected_value, message):
         value = self.read_bytes(len(expected_value))
         if value != expected_value:
-            raise ParserError("unexpected value: {} != {} ({})".format(
-                value, expected_value, message))
+            raise ParserError(f"unexpected value: {value} != {expected_value} ({message})")
 
     def read_uint(self, big_endian=False):
         data_format = ">I" if big_endian else "<I"
@@ -805,7 +813,7 @@ class DataParser:
             _log_debug("Skipping {} bytes ({}): {!r}".format(
                 num_bytes, description, self.read_bytes(num_bytes)))
         elif num_bytes < 0:
-            raise ParserError("Invalid skip of {} bytes".format(num_bytes))
+            raise ParserError(f"Invalid skip of {num_bytes} bytes")
 
     def skip_to(self, offset, description="unknown"):
         self.skip(offset - self.cursor, description)
@@ -886,19 +894,20 @@ def _get_linux_desktop_environment(env):
         xdg_current_desktop = (xdg_current_desktop.partition(":")[0]
                                .strip().lower())
 
-        if xdg_current_desktop == "unity":
-            if desktop_session and "gnome-fallback" in desktop_session:
-                return DE_GNOME
-            else:
-                return DE_UNITY
-        elif xdg_current_desktop == "gnome":
+        if xdg_current_desktop == "gnome":
             return DE_GNOME
-        elif xdg_current_desktop == "x-cinnamon":
-            return DE_CINNAMON
         elif xdg_current_desktop == "kde":
             return DE_KDE
         elif xdg_current_desktop == "pantheon":
             return DE_PANTHEON
+        elif xdg_current_desktop == "unity":
+            return (
+                DE_GNOME
+                if desktop_session and "gnome-fallback" in desktop_session
+                else DE_UNITY
+            )
+        elif xdg_current_desktop == "x-cinnamon":
+            return DE_CINNAMON
         elif xdg_current_desktop == "xfce":
             return DE_XFCE
 
@@ -912,9 +921,7 @@ def _get_linux_desktop_environment(env):
 
     if "GNOME_DESKTOP_SESSION_ID" in env:
         return DE_GNOME
-    if "KDE_FULL_SESSION" in env:
-        return DE_KDE
-    return DE_OTHER
+    return DE_KDE if "KDE_FULL_SESSION" in env else DE_OTHER
 
 
 def _mac_absolute_time_to_posix(timestamp):
@@ -985,12 +992,10 @@ def _find_most_recently_used_file(root, filename):
     # if there are multiple browser profiles, take the most recently used one
     paths = []
     for curr_root, dirs, files in os.walk(root):
-        for file in files:
-            if file == filename:
-                paths.append(os.path.join(curr_root, file))
-    if not paths:
-        return None
-    return max(paths, key=lambda path: os.lstat(path).st_mtime)
+        paths.extend(
+            os.path.join(curr_root, file) for file in files if file == filename
+        )
+    return max(paths, key=lambda path: os.lstat(path).st_mtime) if paths else None
 
 
 def _is_path(value):
@@ -1001,9 +1006,9 @@ def _parse_browser_specification(
         browser, profile=None, keyring=None, container=None, domain=None):
     browser = browser.lower()
     if browser not in SUPPORTED_BROWSERS:
-        raise ValueError("Unsupported browser '{}'".format(browser))
+        raise ValueError(f"Unsupported browser '{browser}'")
     if keyring and keyring not in SUPPORTED_KEYRINGS:
-        raise ValueError("Unsupported keyring '{}'".format(keyring))
+        raise ValueError(f"Unsupported keyring '{keyring}'")
     if profile and _is_path(profile):
         profile = os.path.expanduser(profile)
     return browser, profile, keyring, container, domain

@@ -69,7 +69,7 @@ class OAuthBase(Extractor):
 
     def open(self, url, params, recv=None):
         """Open 'url' in browser amd return response parameters"""
-        url += "?" + urllib.parse.urlencode(params)
+        url += f"?{urllib.parse.urlencode(params)}"
 
         browser = self.config("browser", True)
         if browser:
@@ -85,12 +85,11 @@ class OAuthBase(Extractor):
         else:
             self.log.info("Please open this URL in your browser:")
 
-        stdout_write("\n{}\n\n".format(url))
+        stdout_write(f"\n{url}\n\n")
         return (recv or self.recv)()
 
     def error(self, msg):
-        return self.send(
-            "Remote server reported an error:\n\n{}\n".format(msg))
+        return self.send(f"Remote server reported an error:\n\n{msg}\n")
 
     def _oauth1_authorization_flow(
             self, default_key, default_secret,
@@ -147,10 +146,7 @@ class OAuthBase(Extractor):
                       "default" if client_id == default_id else "custom",
                       instance or self.subcategory, client_id)
 
-        state = "gallery-dl_{}_{}".format(
-            self.subcategory,
-            oauth.nonce(8),
-        )
+        state = f"gallery-dl_{self.subcategory}_{oauth.nonce(8)}"
 
         auth_params = {
             "client_id"    : client_id,
@@ -166,8 +162,9 @@ class OAuthBase(Extractor):
 
         # check authorization response
         if state != params.get("state"):
-            self.send("'state' mismatch: expected {}, got {}.\n".format(
-                state, params.get("state")))
+            self.send(
+                f"""'state' mismatch: expected {state}, got {params.get("state")}.\n"""
+            )
             return
         if "error" in params:
             return self.error(params)
@@ -197,7 +194,7 @@ class OAuthBase(Extractor):
 
         # write to cache
         if self.cache and cache:
-            cache.update(instance or ("#" + str(client_id)), token)
+            cache.update(instance or f"#{str(client_id)}", token)
             self.log.info("Writing '%s' to cache", token_name)
 
         # display token
@@ -213,26 +210,18 @@ class OAuthBase(Extractor):
         )
 
         msg = "\nYour {} {}\n\n{}\n\n".format(
-            " and ".join("'" + n + "'" for n in names),
-            _is,
-            "\n".join(values),
+            " and ".join(f"'{n}'" for n in names), _is, "\n".join(values)
         )
 
         opt = self.oauth_config(names[0])
         if self.cache and (opt is None or opt == "cache"):
             msg += _vh + " been cached and will automatically be used.\n"
         else:
-            msg += "Put " + _va + " into your configuration file as \n"
-            msg += " and\n".join(
-                "'extractor." + self.subcategory + "." + n + "'"
-                for n in names
-            )
+            msg += f"Put {_va}" + " into your configuration file as \n"
+            msg += " and\n".join(f"'extractor.{self.subcategory}.{n}'" for n in names)
             if self.cache:
-                msg += (
-                    "\nor set\n'extractor.{}.{}' to \"cache\""
-                    .format(self.subcategory, names[0])
-                )
-            msg += "\nto use {}.\n".format(_it)
+                msg += f"""\nor set\n'extractor.{self.subcategory}.{names[0]}' to \"cache\""""
+            msg += f"\nto use {_it}.\n"
 
         return msg
 
@@ -360,8 +349,8 @@ class OAuthMastodon(OAuthBase):
             application["client-secret"],
             application["client-id"],
             application["client-secret"],
-            "https://{}/oauth/authorize".format(self.instance),
-            "https://{}/oauth/token".format(self.instance),
+            f"https://{self.instance}/oauth/authorize",
+            f"https://{self.instance}/oauth/token",
             instance=self.instance,
             key="access_token",
             cache=mastodon._access_token_cache,
@@ -371,9 +360,9 @@ class OAuthMastodon(OAuthBase):
     def _register(self, instance):
         self.log.info("Registering application for '%s'", instance)
 
-        url = "https://{}/api/v1/apps".format(instance)
+        url = f"https://{instance}/api/v1/apps"
         data = {
-            "client_name": "gdl:" + oauth.nonce(8),
+            "client_name": f"gdl:{oauth.nonce(8)}",
             "redirect_uris": self.redirect_uri,
             "scopes": "read",
         }
@@ -434,7 +423,7 @@ class OAuthPixiv(OAuthBase):
         data = self.session.post(url, headers=headers, data=data).json()
 
         if "error" in data:
-            stdout_write("\n{}\n".format(data))
+            stdout_write(f"\n{data}\n")
             if data["error"] in ("invalid_request", "invalid_grant"):
                 stdout_write("'code' expired, try again\n\n")
             return

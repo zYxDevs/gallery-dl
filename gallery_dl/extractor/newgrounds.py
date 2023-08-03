@@ -28,7 +28,7 @@ class NewgroundsExtractor(Extractor):
     def __init__(self, match):
         Extractor.__init__(self, match)
         self.user = match.group(1)
-        self.user_root = "https://{}.newgrounds.com".format(self.user)
+        self.user_root = f"https://{self.user}.newgrounds.com"
 
     def _init(self):
         self.flash = self.config("flash", True)
@@ -85,7 +85,7 @@ class NewgroundsExtractor(Extractor):
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
 
-        url = self.root + "/passport/"
+        url = f"{self.root}/passport/"
         response = self.request(url)
         if response.history and response.url.endswith("/social"):
             return self.cookies
@@ -203,7 +203,7 @@ class NewgroundsExtractor(Extractor):
             date = text.parse_datetime(extr(
                 'itemprop="datePublished" content="', '"'))
         else:
-            url = self.root + "/portal/video/" + index
+            url = f"{self.root}/portal/video/{index}"
             headers = {
                 "Accept": "application/json, text/javascript, */*; q=0.01",
                 "X-Requested-With": "XMLHttpRequest",
@@ -253,7 +253,7 @@ class NewgroundsExtractor(Extractor):
             yield fmt[1][0]["src"]
 
     def _pagination(self, kind):
-        url = "{}/{}".format(self.user_root, kind)
+        url = f"{self.user_root}/{kind}"
         params = {
             "page": 1,
             "isAjaxRequest": "1",
@@ -340,8 +340,9 @@ class NewgroundsImageExtractor(NewgroundsExtractor):
         NewgroundsExtractor.__init__(self, match)
         if match.group(2):
             self.user = match.group(2)
-            self.post_url = "https://www.newgrounds.com/art/view/{}/{}".format(
-                self.user, match.group(3))
+            self.post_url = (
+                f"https://www.newgrounds.com/art/view/{self.user}/{match.group(3)}"
+            )
         else:
             self.post_url = text.ensure_http_scheme(match.group(0))
 
@@ -523,13 +524,16 @@ class NewgroundsUserExtractor(NewgroundsExtractor):
         pass
 
     def items(self):
-        base = self.user_root + "/"
-        return self._dispatch_extractors((
-            (NewgroundsArtExtractor   , base + "art"),
-            (NewgroundsAudioExtractor , base + "audio"),
-            (NewgroundsGamesExtractor , base + "games"),
-            (NewgroundsMoviesExtractor, base + "movies"),
-        ), ("art",))
+        base = f"{self.user_root}/"
+        return self._dispatch_extractors(
+            (
+                (NewgroundsArtExtractor, f"{base}art"),
+                (NewgroundsAudioExtractor, f"{base}audio"),
+                (NewgroundsGamesExtractor, f"{base}games"),
+                (NewgroundsMoviesExtractor, f"{base}movies"),
+            ),
+            ("art",),
+        )
 
 
 class NewgroundsFavoriteExtractor(NewgroundsExtractor):
@@ -560,7 +564,7 @@ class NewgroundsFavoriteExtractor(NewgroundsExtractor):
         )
 
     def _pagination(self, kind):
-        url = "{}/favorites/{}".format(self.user_root, kind)
+        url = f"{self.user_root}/favorites/{kind}"
         params = {
             "page": 1,
             "isAjaxRequest": "1",
@@ -642,13 +646,10 @@ class NewgroundsSearchExtractor(NewgroundsExtractor):
         self.query = text.parse_query(query)
 
     def posts(self):
-        suitabilities = self.query.get("suitabilities")
-        if suitabilities:
-            data = {"view_suitability_" + s: "on"
-                    for s in suitabilities.split(",")}
-            self.request(self.root + "/suitabilities",
-                         method="POST", data=data)
-        return self._pagination("/search/conduct/" + self._path, self.query)
+        if suitabilities := self.query.get("suitabilities"):
+            data = {f"view_suitability_{s}": "on" for s in suitabilities.split(",")}
+            self.request(f"{self.root}/suitabilities", method="POST", data=data)
+        return self._pagination(f"/search/conduct/{self._path}", self.query)
 
     def metadata(self):
         return {"search_tags": self.query.get("terms", "")}

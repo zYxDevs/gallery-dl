@@ -64,15 +64,14 @@ class LynxchanThreadExtractor(LynxchanExtractor):
         self.thread = match.group(index)
 
     def items(self):
-        url = "{}/{}/res/{}.json".format(self.root, self.board, self.thread)
+        url = f"{self.root}/{self.board}/res/{self.thread}.json"
         thread = self.request(url).json()
         thread["postId"] = thread["threadId"]
         posts = thread.pop("posts", ())
 
         yield Message.Directory, thread
         for post in itertools.chain((thread,), posts):
-            files = post.pop("files", ())
-            if files:
+            if files := post.pop("files", ()):
                 thread.update(post)
                 for num, file in enumerate(files):
                     file.update(thread)
@@ -110,9 +109,8 @@ class LynxchanBoardExtractor(LynxchanExtractor):
         self.board = match.group(match.lastindex)
 
     def items(self):
-        url = "{}/{}/catalog.json".format(self.root, self.board)
+        url = f"{self.root}/{self.board}/catalog.json"
         for thread in self.request(url).json():
-            url = "{}/{}/res/{}.html".format(
-                self.root, self.board, thread["threadId"])
+            url = f'{self.root}/{self.board}/res/{thread["threadId"]}.html'
             thread["_extractor"] = LynxchanThreadExtractor
             yield Message.Queue, url, thread

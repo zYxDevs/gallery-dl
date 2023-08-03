@@ -104,7 +104,7 @@ class TestFormatter(unittest.TestCase):
         self._run_test("{missing}"     , replacement, default)
         self._run_test("{missing.attr}", replacement, default)
         self._run_test("{missing[key]}", replacement, default)
-        self._run_test("{missing:?a//}", "a" + default, default)
+        self._run_test("{missing:?a//}", f"a{default}", default)
 
     def test_fmt_func(self):
         self._run_test("{t}" , self.kwdict["t"] , None, int)
@@ -368,16 +368,22 @@ class TestFormatter(unittest.TestCase):
 
     def test_expression(self):
         self._run_test("\fE a", self.kwdict["a"])
-        self._run_test("\fE name * 2 + ' ' + a", "{}{} {}".format(
-            self.kwdict["name"], self.kwdict["name"], self.kwdict["a"]))
+        self._run_test(
+            "\fE name * 2 + ' ' + a",
+            f'{self.kwdict["name"]}{self.kwdict["name"]} {self.kwdict["a"]}',
+        )
 
     @unittest.skipIf(sys.hexversion < 0x3060000, "no fstring support")
     def test_fstring(self):
         self._run_test("\fF {a}", self.kwdict["a"])
-        self._run_test("\fF {name}{name} {a}", "{}{} {}".format(
-            self.kwdict["name"], self.kwdict["name"], self.kwdict["a"]))
-        self._run_test("\fF foo-'\"{a.upper()}\"'-bar",
-                       """foo-'"{}"'-bar""".format(self.kwdict["a"].upper()))
+        self._run_test(
+            "\fF {name}{name} {a}",
+            f'{self.kwdict["name"]}{self.kwdict["name"]} {self.kwdict["a"]}',
+        )
+        self._run_test(
+            "\fF foo-'\"{a.upper()}\"'-bar",
+            f"""foo-'"{self.kwdict["a"].upper()}"'-bar""",
+        )
 
     @unittest.skipIf(sys.hexversion < 0x3060000, "no fstring support")
     def test_template_fstring(self):
@@ -394,8 +400,10 @@ class TestFormatter(unittest.TestCase):
             fmt2 = formatter.parse("\fTF " + path2)
 
         self.assertEqual(fmt1.format_map(self.kwdict), self.kwdict["a"])
-        self.assertEqual(fmt2.format_map(self.kwdict),
-                         """foo-'"{}"'-bar""".format(self.kwdict["a"].upper()))
+        self.assertEqual(
+            fmt2.format_map(self.kwdict),
+            f"""foo-'"{self.kwdict["a"].upper()}"'-bar""",
+        )
 
         with self.assertRaises(OSError):
             formatter.parse("\fTF /")

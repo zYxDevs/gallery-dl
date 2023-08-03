@@ -58,7 +58,7 @@ class InkbunnyExtractor(Extractor):
 
                 url = file["file_url_full"]
                 if "/private_files/" in url:
-                    url += "?sid=" + self.api.session_id
+                    url += f"?sid={self.api.session_id}"
                 yield Message.Url, url, post
 
     def posts(self):
@@ -159,8 +159,7 @@ class InkbunnyPoolExtractor(InkbunnyExtractor):
 
     def __init__(self, match):
         InkbunnyExtractor.__init__(self, match)
-        pid = match.group(1)
-        if pid:
+        if pid := match.group(1):
             self.pool_id = pid
             self.orderby = "pool_order"
         else:
@@ -198,8 +197,7 @@ class InkbunnyFavoriteExtractor(InkbunnyExtractor):
 
     def __init__(self, match):
         InkbunnyExtractor.__init__(self, match)
-        uid = match.group(1)
-        if uid:
+        if uid := match.group(1):
             self.user_id = uid
             self.orderby = self.config("orderby", "fav_datetime")
         else:
@@ -262,10 +260,9 @@ class InkbunnySearchExtractor(InkbunnyExtractor):
         params["dayslimit"] = pop("days", None)
         params["username"] = pop("artist", None)
 
-        favsby = pop("favsby", None)
-        if favsby:
+        if favsby := pop("favsby", None):
             # get user_id from user profile
-            url = "{}/{}".format(self.root, favsby)
+            url = f"{self.root}/{favsby}"
             page = self.request(url).text
             user_id = text.extr(page, "?user_id=", "'")
             params["favs_user_id"] = user_id.partition("&")[0]
@@ -295,7 +292,7 @@ class InkbunnyFollowingExtractor(InkbunnyExtractor):
             text.parse_query(match.group(2)).get("user_id")
 
     def items(self):
-        url = self.root + "/watchlist_process.php"
+        url = f"{self.root}/watchlist_process.php"
         params = {"mode": "watching", "user_id": self.user_id}
 
         with self.request(url, params=params) as response:
@@ -398,7 +395,7 @@ class InkbunnyAPI():
             self.set_allowed_ratings()
 
     def _call(self, endpoint, params):
-        url = "https://inkbunny.net/api_" + endpoint + ".php"
+        url = f"https://inkbunny.net/api_{endpoint}.php"
         params["sid"] = self.session_id
         data = self.extractor.request(url, params=params).json()
 

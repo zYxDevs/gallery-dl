@@ -131,7 +131,7 @@ class UgoiraPP(PostProcessor):
                 if self.twopass:
                     if "-f" not in self.args:
                         args += ("-f", self.extension)
-                    args += ("-passlogfile", tempdir + "/ffmpeg2pass", "-pass")
+                    args += ("-passlogfile", f"{tempdir}/ffmpeg2pass", "-pass")
                     self._exec(args + ["1", "-y", os.devnull])
                     self._exec(args + ["2", pathfmt.realpath])
                 else:
@@ -148,8 +148,7 @@ class UgoiraPP(PostProcessor):
                 pathfmt.realpath = pathfmt.temppath
             else:
                 if self.mtime:
-                    mtime = pathfmt.kwdict.get("_mtime")
-                    if mtime:
+                    if mtime := pathfmt.kwdict.get("_mtime"):
                         util.set_mtime(pathfmt.realpath, mtime)
                 if self.delete:
                     pathfmt.delete = True
@@ -205,34 +204,37 @@ class UgoiraPP(PostProcessor):
 
         return [
             self.ffmpeg,
-            "-f", "image2",
-            "-ts_from_file", "2",
-            "-pattern_type", "sequence",
-            "-i", "{}%06d.{}".format(
-                tempdir.replace("%", "%%"),
-                frame["file"].rpartition(".")[2]
-            ),
+            "-f",
+            "image2",
+            "-ts_from_file",
+            "2",
+            "-pattern_type",
+            "sequence",
+            "-i",
+            f'{tempdir.replace("%", "%%")}%06d.{frame["file"].rpartition(".")[2]}',
         ]
 
     def _process_mkvmerge(self, pathfmt, tempdir):
         self._realpath = pathfmt.realpath
-        pathfmt.realpath = tempdir + "/temp." + self.extension
+        pathfmt.realpath = f"{tempdir}/temp.{self.extension}"
 
         return [
             self.ffmpeg,
-            "-f", "image2",
-            "-pattern_type", "sequence",
-            "-i", "{}/%06d.{}".format(
-                tempdir.replace("%", "%%"),
-                self._frames[0]["file"].rpartition(".")[2]
-            ),
+            "-f",
+            "image2",
+            "-pattern_type",
+            "sequence",
+            "-i",
+            f'{tempdir.replace("%", "%%")}/%06d.{self._frames[0]["file"].rpartition(".")[2]}',
         ]
 
     def _finalize_mkvmerge(self, pathfmt, tempdir):
         args = [
             self.mkvmerge,
-            "-o", pathfmt.path,  # mkvmerge does not support "raw" paths
-            "--timecodes", "0:" + self._write_mkvmerge_timecodes(tempdir),
+            "-o",
+            pathfmt.path,
+            "--timecodes",
+            f"0:{self._write_mkvmerge_timecodes(tempdir)}",
         ]
         if self.extension == "webm":
             args.append("--webm")
@@ -246,13 +248,12 @@ class UgoiraPP(PostProcessor):
         append = content.append
 
         for frame in self._frames:
-            append("file '{}'\nduration {}".format(
-                frame["file"], frame["delay"] / 1000))
+            append(f"""file '{frame["file"]}'\nduration {frame["delay"] / 1000}""")
         if self.repeat:
-            append("file '{}'".format(frame["file"]))
+            append(f"""file '{frame["file"]}'""")
         append("")
 
-        ffconcat = tempdir + "/ffconcat.txt"
+        ffconcat = f"{tempdir}/ffconcat.txt"
         with open(ffconcat, "w") as file:
             file.write("\n".join(content))
         return ffconcat
@@ -268,16 +269,15 @@ class UgoiraPP(PostProcessor):
         append(str(delay_sum))
         append("")
 
-        timecodes = tempdir + "/timecodes.tc"
+        timecodes = f"{tempdir}/timecodes.tc"
         with open(timecodes, "w") as file:
             file.write("\n".join(content))
         return timecodes
 
     def calculate_framerate(self, frames):
-        uniform = self._delay_is_uniform(frames)
-        if uniform:
-            return ("1000/{}".format(frames[0]["delay"]), None)
-        return (None, "1000/{}".format(self._delay_gcd(frames)))
+        if uniform := self._delay_is_uniform(frames):
+            return f'1000/{frames[0]["delay"]}', None
+        return None, f"1000/{self._delay_gcd(frames)}"
 
     @staticmethod
     def _delay_gcd(frames):
@@ -289,10 +289,7 @@ class UgoiraPP(PostProcessor):
     @staticmethod
     def _delay_is_uniform(frames):
         delay = frames[0]["delay"]
-        for f in frames:
-            if f["delay"] != delay:
-                return False
-        return True
+        return all(f["delay"] == delay for f in frames)
 
 
 __postprocessor__ = UgoiraPP

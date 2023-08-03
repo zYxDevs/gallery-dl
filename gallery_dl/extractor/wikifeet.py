@@ -81,7 +81,7 @@ class WikifeetGalleryExtractor(GalleryExtractor):
             self.category = "wikifeetx"
         self.type = "men" if "://men." in self.root else "women"
         self.celeb = match.group(1)
-        GalleryExtractor.__init__(self, match, self.root + "/" + self.celeb)
+        GalleryExtractor.__init__(self, match, f"{self.root}/{self.celeb}")
 
     def metadata(self, page):
         extr = text.extract_from(page)
@@ -105,7 +105,7 @@ class WikifeetGalleryExtractor(GalleryExtractor):
             "S": "Soles",
             "B": "Barefoot",
         }
-        ufmt = "https://pics.wikifeet.com/" + self.celeb + "-Feet-{}.jpg"
+        ufmt = f"https://pics.wikifeet.com/{self.celeb}" + "-Feet-{}.jpg"
         return [
             (ufmt.format(data["pid"]), {
                 "pid"   : data["pid"],

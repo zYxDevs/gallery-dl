@@ -22,7 +22,7 @@ class E621Extractor(danbooru.DanbooruExtractor):
     request_interval_min = 1.0
 
     def items(self):
-        self.session.headers["User-Agent"] = util.USERAGENT + " (by mikf)"
+        self.session.headers["User-Agent"] = f"{util.USERAGENT} (by mikf)"
 
         includes = self.config("metadata") or ()
         if includes:
@@ -40,17 +40,16 @@ class E621Extractor(danbooru.DanbooruExtractor):
 
             if not file["url"]:
                 md5 = file["md5"]
-                file["url"] = "https://static1.{}/data/{}/{}/{}.{}".format(
-                    self.root[8:], md5[0:2], md5[2:4], md5, file["ext"])
+                file[
+                    "url"
+                ] = f'https://static1.{self.root[8:]}/data/{md5[:2]}/{md5[2:4]}/{md5}.{file["ext"]}'
 
             if notes and post.get("has_notes"):
-                url = "{}/notes.json?search[post_id]={}".format(
-                    self.root, post["id"])
+                url = f'{self.root}/notes.json?search[post_id]={post["id"]}'
                 post["notes"] = self.request(url).json()
 
             if pools and post["pools"]:
-                url = "{}/pools.json?search[id]={}".format(
-                    self.root, ",".join(map(str, post["pools"])))
+                url = f'{self.root}/pools.json?search[id]={",".join(map(str, post["pools"]))}'
                 post["pools"] = _pools = self.request(url).json()
                 for pool in _pools:
                     pool["name"] = pool["name"].replace("_", " ")
@@ -133,7 +132,8 @@ class E621PoolExtractor(E621Extractor, danbooru.DanbooruPoolExtractor):
         id_to_post = {
             post["id"]: post
             for post in self._pagination(
-                "/posts.json", {"tags": "pool:" + self.pool_id})
+                "/posts.json", {"tags": f"pool:{self.pool_id}"}
+            )
         }
 
         posts = []
@@ -214,7 +214,7 @@ class E621PostExtractor(E621Extractor, danbooru.DanbooruPostExtractor):
     )
 
     def posts(self):
-        url = "{}/posts/{}.json".format(self.root, self.post_id)
+        url = f"{self.root}/posts/{self.post_id}.json"
         return (self.request(url).json()["post"],)
 
 

@@ -46,7 +46,7 @@ class KhinsiderSoundtrackExtractor(AsynchronousMixin, Extractor):
         self.album = match.group(1)
 
     def items(self):
-        url = self.root + "/game-soundtracks/album/" + self.album
+        url = f"{self.root}/game-soundtracks/album/{self.album}"
         page = self.request(url, encoding="utf-8").text
         if "Download all songs at once:" not in page:
             raise exception.NotFoundError("soundtrack")
@@ -71,11 +71,7 @@ class KhinsiderSoundtrackExtractor(AsynchronousMixin, Extractor):
     def tracks(self, page):
         fmt = self.config("format", ("mp3",))
         if fmt and isinstance(fmt, str):
-            if fmt == "all":
-                fmt = None
-            else:
-                fmt = fmt.lower().split(",")
-
+            fmt = None if fmt == "all" else fmt.lower().split(",")
         page = text.extr(page, '<table id="songlist">', '</table>')
         for num, url in enumerate(text.extract_iter(
                 page, '<td class="clickable-row"><a href="', '"'), 1):

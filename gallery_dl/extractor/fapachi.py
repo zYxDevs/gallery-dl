@@ -43,8 +43,7 @@ class FapachiPostExtractor(Extractor):
             "user": self.user,
             "id"  : self.id,
         }
-        page = self.request("{}/{}/media/{}".format(
-            self.root, self.user, self.id)).text
+        page = self.request(f"{self.root}/{self.user}/media/{self.id}").text
         url = self.root + text.extr(page, 'd-block" src="', '"')
         yield Message.Directory, data
         yield Message.Url, url, text.nameext_from_url(url, data)
@@ -74,8 +73,7 @@ class FapachiUserExtractor(Extractor):
     def items(self):
         data = {"_extractor": FapachiPostExtractor}
         while True:
-            page = self.request("{}/{}/page/{}".format(
-                self.root, self.user, self.num)).text
+            page = self.request(f"{self.root}/{self.user}/page/{self.num}").text
             for post in text.extract_iter(page, 'model-media-prew">', ">"):
                 url = self.root + text.extr(post, '<a href="', '"')
                 yield Message.Queue, url, data

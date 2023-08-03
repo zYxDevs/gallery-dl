@@ -62,8 +62,12 @@ class UrlshortenerLinkExtractor(UrlshortenerExtractor):
 
     def items(self):
         response = self.request(
-            "{}/{}".format(self.root, self.id), headers=self.headers,
-            method="HEAD", allow_redirects=False, notfound="URL")
+            f"{self.root}/{self.id}",
+            headers=self.headers,
+            method="HEAD",
+            allow_redirects=False,
+            notfound="URL",
+        )
         try:
             yield Message.Queue, response.headers["location"], {}
         except KeyError:

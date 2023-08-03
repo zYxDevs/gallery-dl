@@ -51,18 +51,17 @@ class MyportfolioGalleryExtractor(Extractor):
         self.prefix = "myportfolio:" if domain1 else ""
 
     def items(self):
-        url = "https://" + self.domain + (self.path or "")
+        url = f"https://{self.domain}" + (self.path or "")
         response = self.request(url)
         if response.history and response.url.endswith(".adobe.com/missing"):
             raise exception.NotFoundError()
         page = response.text
 
-        projects = text.extr(
-            page, '<section class="project-covers', '</section>')
-
-        if projects:
+        if projects := text.extr(
+            page, '<section class="project-covers', '</section>'
+        ):
             data = {"_extractor": MyportfolioGalleryExtractor}
-            base = self.prefix + "https://" + self.domain
+            base = f"{self.prefix}https://{self.domain}"
             for path in text.extract_iter(projects, ' href="', '"'):
                 yield Message.Queue, base + path, data
         else:

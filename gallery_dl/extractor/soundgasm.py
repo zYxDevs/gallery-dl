@@ -80,7 +80,7 @@ class SoundgasmAudioExtractor(SoundgasmExtractor):
         self.user, self.slug = match.groups()
 
     def sounds(self):
-        return ("{}/u/{}/{}".format(self.root, self.user, self.slug),)
+        return (f"{self.root}/u/{self.user}/{self.slug}", )
 
 
 class SoundgasmUserExtractor(SoundgasmExtractor):
@@ -106,7 +106,7 @@ class SoundgasmUserExtractor(SoundgasmExtractor):
         self.user = match.group(1)
 
     def sounds(self):
-        page = self.request(self.root + "/user/" + self.user).text
+        page = self.request(f"{self.root}/user/{self.user}").text
         return [
             text.extr(sound, '<a href="', '"')
             for sound in text.extract_iter(

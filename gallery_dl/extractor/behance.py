@@ -109,7 +109,7 @@ class BehanceGalleryExtractor(BehanceExtractor):
 
     def get_gallery_data(self):
         """Collect gallery info dict"""
-        url = "{}/gallery/{}/a".format(self.root, self.gallery_id)
+        url = f"{self.root}/gallery/{self.gallery_id}/a"
         cookies = {
             "_evidon_consent_cookie":
                 '{"consent_date":"2019-01-31T09:41:15.132Z"}',
@@ -160,8 +160,9 @@ class BehanceGalleryExtractor(BehanceExtractor):
                             break
 
             elif mtype == "EmbedModule":
-                embed = module.get("originalEmbed") or module.get("fluidEmbed")
-                if embed:
+                if embed := module.get("originalEmbed") or module.get(
+                    "fluidEmbed"
+                ):
                     append(("ytdl:" + text.extr(embed, 'src="', '"'), module))
 
         return result
@@ -182,7 +183,7 @@ class BehanceUserExtractor(BehanceExtractor):
         self.user = match.group(1)
 
     def galleries(self):
-        url = "{}/{}/projects".format(self.root, self.user)
+        url = f"{self.root}/{self.user}/projects"
         params = {"offset": 0}
         headers = {"X-Requested-With": "XMLHttpRequest"}
 
@@ -210,12 +211,12 @@ class BehanceCollectionExtractor(BehanceExtractor):
         self.collection_id = match.group(1)
 
     def galleries(self):
-        url = self.root + "/v3/graphql"
+        url = f"{self.root}/v3/graphql"
         headers = {
-            "Origin" : self.root,
-            "Referer": self.root + "/collection/" + self.collection_id,
-            "X-BCP"           : "4c34489d-914c-46cd-b44c-dfd0e661136d",
-            "X-NewRelic-ID"   : "VgUFVldbGwsFU1BRDwUBVw==",
+            "Origin": self.root,
+            "Referer": f"{self.root}/collection/{self.collection_id}",
+            "X-BCP": "4c34489d-914c-46cd-b44c-dfd0e661136d",
+            "X-NewRelic-ID": "VgUFVldbGwsFU1BRDwUBVw==",
             "X-Requested-With": "XMLHttpRequest",
         }
         cookies = {

@@ -87,8 +87,7 @@ class ExecPP(PostProcessor):
 
     def _exec(self, args, shell):
         self.log.debug("Running '%s'", args)
-        retcode = subprocess.Popen(args, shell=shell).wait()
-        if retcode:
+        if retcode := subprocess.Popen(args, shell=shell).wait():
             self.log.warning("'%s' returned with non-zero exit status (%d)",
                              args, retcode)
 

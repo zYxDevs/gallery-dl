@@ -222,7 +222,7 @@ class PhilomenaGalleryExtractor(PhilomenaExtractor):
             raise exception.NotFoundError("gallery")
 
     def posts(self):
-        gallery_id = "gallery_id:" + self.gallery_id
+        gallery_id = f"gallery_id:{self.gallery_id}"
         params = {"sd": "desc", "sf": gallery_id, "q": gallery_id}
         return self.api.search(params)
 
@@ -235,15 +235,15 @@ class PhilomenaAPI():
 
     def __init__(self, extractor):
         self.extractor = extractor
-        self.root = extractor.root + "/api"
+        self.root = f"{extractor.root}/api"
 
     def gallery(self, gallery_id):
         endpoint = "/v1/json/search/galleries"
-        params = {"q": "id:" + gallery_id}
+        params = {"q": f"id:{gallery_id}"}
         return self._call(endpoint, params)["galleries"][0]
 
     def image(self, image_id):
-        endpoint = "/v1/json/images/" + image_id
+        endpoint = f"/v1/json/images/{image_id}"
         return self._call(endpoint)["image"]
 
     def search(self, params):
@@ -275,8 +275,7 @@ class PhilomenaAPI():
         if api_key:
             params["key"] = api_key
 
-        filter_id = extr.config("filter")
-        if filter_id:
+        if filter_id := extr.config("filter"):
             params["filter_id"] = filter_id
         elif not api_key:
             try:

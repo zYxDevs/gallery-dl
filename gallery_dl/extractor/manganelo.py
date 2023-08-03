@@ -20,10 +20,10 @@ class ManganeloBase():
 
     def __init__(self, match):
         domain, path = match.groups()
-        super().__init__(match, "https://" + domain + path)
+        super().__init__(match, f"https://{domain}{path}")
 
     def _init(self):
-        self.session.headers['Referer'] = self.root + "/"
+        self.session.headers['Referer'] = f"{self.root}/"
 
         if self._match_chapter is None:
             ManganeloBase._match_chapter = re.compile(
@@ -32,8 +32,7 @@ class ManganeloBase():
                 r"(?::\s*(.+))?").match
 
     def _parse_chapter(self, info, manga, author, date=None):
-        match = self._match_chapter(info)
-        if match:
+        if match := self._match_chapter(info):
             volume, chapter, minor, title = match.groups()
         else:
             volume = chapter = minor = ""

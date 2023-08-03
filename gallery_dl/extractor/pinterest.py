@@ -47,14 +47,13 @@ class PinterestExtractor(Extractor):
 
             pin.update(data)
 
-            carousel_data = pin.get("carousel_data")
-            if carousel_data:
+            if carousel_data := pin.get("carousel_data"):
                 for num, slot in enumerate(carousel_data["carousel_slots"], 1):
                     slot["media_id"] = slot.pop("id")
                     pin.update(slot)
                     pin["num"] = num
                     size, image = next(iter(slot["images"].items()))
-                    url = image["url"].replace("/" + size + "/", "/originals/")
+                    url = image["url"].replace(f"/{size}/", "/originals/")
                     yield Message.Url, url, text.nameext_from_url(url, pin)
 
             else:
@@ -74,7 +73,7 @@ class PinterestExtractor(Extractor):
                     text.nameext_from_url(url, pin)
 
                     if pin["extension"] == "m3u8":
-                        url = "ytdl:" + url
+                        url = f"ytdl:{url}"
                         pin["extension"] = "mp4"
 
                     yield Message.Url, url, pin
@@ -87,24 +86,22 @@ class PinterestExtractor(Extractor):
 
     @staticmethod
     def _media_from_pin(pin):
-        videos = pin.get("videos")
-        if videos:
-            video_formats = videos["video_list"]
+        if not (videos := pin.get("videos")):
+            return pin["images"]["orig"]
+        video_formats = videos["video_list"]
 
-            for fmt in ("V_HLSV4", "V_HLSV3_WEB", "V_HLSV3_MOBILE"):
-                if fmt in video_formats:
-                    media = video_formats[fmt]
-                    break
-            else:
-                media = max(video_formats.values(),
-                            key=lambda x: x.get("width", 0))
+        for fmt in ("V_HLSV4", "V_HLSV3_WEB", "V_HLSV3_MOBILE"):
+            if fmt in video_formats:
+                media = video_formats[fmt]
+                break
+        else:
+            media = max(video_formats.values(),
+                        key=lambda x: x.get("width", 0))
 
-            if "V_720P" in video_formats:
-                media["_fallback"] = (video_formats["V_720P"]["url"],)
+        if "V_720P" in video_formats:
+            media["_fallback"] = (video_formats["V_720P"]["url"],)
 
-            return media
-
-        return pin["images"]["orig"]
+        return media
 
 
 class PinterestPinExtractor(PinterestExtractor):
@@ -183,8 +180,7 @@ class PinterestBoardExtractor(PinterestExtractor):
         pins = self.api.board_pins(board["id"])
 
         if board["section_count"] and self.config("sections", True):
-            base = "{}/{}/{}/id:".format(
-                self.root, board["owner"]["username"], board["name"])
+            base = f'{self.root}/{board["owner"]["username"]}/{board["name"]}/id:'
             data = {"_extractor": PinterestSectionExtractor}
             sections = [(base + section["id"], data)
                         for section in self.api.board_sections(board["id"])]
@@ -211,8 +207,7 @@ class PinterestUserExtractor(PinterestExtractor):
 
     def items(self):
         for board in self.api.boards(self.user):
-            url = board.get("url")
-            if url:
+            if url := board.get("url"):
                 board["_extractor"] = PinterestBoardExtractor
                 yield Message.Queue, self.root + url, board
 
@@ -368,8 +363,7 @@ class PinterestPinitExtractor(PinterestExtractor):
         self.shortened_id = match.group(1)
 
     def items(self):
-        url = "https://api.pinterest.com/url_shortener/{}/redirect/".format(
-            self.shortened_id)
+        url = f"https://api.pinterest.com/url_shortener/{self.shortened_id}/redirect/"
         response = self.request(url, method="HEAD", allow_redirects=False)
         location = response.headers.get("Location")
         if not location or not PinterestPinExtractor.pattern.match(location):
@@ -391,15 +385,14 @@ class PinterestAPI():
         self.root = extractor.root
         self.cookies = {"csrftoken": csrf_token}
         self.headers = {
-            "Accept"              : "application/json, text/javascript, "
-                                    "*/*, q=0.01",
-            "Accept-Language"     : "en-US,en;q=0.5",
-            "Referer"             : self.root + "/",
-            "X-Requested-With"    : "XMLHttpRequest",
-            "X-APP-VERSION"       : "0c4af40",
-            "X-CSRFToken"         : csrf_token,
+            "Accept": "application/json, text/javascript, " "*/*, q=0.01",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Referer": f"{self.root}/",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-APP-VERSION": "0c4af40",
+            "X-CSRFToken": csrf_token,
             "X-Pinterest-AppState": "active",
-            "Origin"              : self.root,
+            "Origin": self.root,
         }
 
     def pin(self, pin_id):
@@ -496,7 +489,7 @@ class PinterestAPI():
     def _login_impl(self, username, password):
         self.extractor.log.info("Logging in as %s", username)
 
-        url = self.root + "/resource/UserSessionResource/create/"
+        url = f"{self.root}/resource/UserSessionResource/create/"
         options = {
             "username_or_email": username,
             "password"         : password,
@@ -522,7 +515,7 @@ class PinterestAPI():
         }
 
     def _call(self, resource, options):
-        url = "{}/resource/{}Resource/get/".format(self.root, resource)
+        url = f"{self.root}/resource/{resource}Resource/get/"
         params = {
             "data"      : util.json_dumps({"options": options}),
             "source_url": "",
