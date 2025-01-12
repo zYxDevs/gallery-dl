@@ -24,8 +24,13 @@ class PhilomenaExtractor(BooruExtractor):
 
     def _init(self):
         self.api = PhilomenaAPI(self)
+        if not self.config("svg", True):
+            self._file_url = operator.itemgetter("view_url")
 
-    _file_url = operator.itemgetter("view_url")
+    def _file_url(self, post):
+        if post["format"] == "svg":
+            return post["view_url"].rpartition(".")[0] + ".svg"
+        return post["view_url"]
 
     @staticmethod
     def _prepare(post):
@@ -41,7 +46,7 @@ BASE_PATTERN = PhilomenaExtractor.update({
     "ponybooru": {
         "root": "https://ponybooru.org",
         "pattern": r"(?:www\.)?ponybooru\.org",
-        "filter_id": "2",
+        "filter_id": "3",
     },
     "furbooru": {
         "root": "https://furbooru.org",

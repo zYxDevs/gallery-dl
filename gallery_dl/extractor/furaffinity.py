@@ -11,7 +11,7 @@
 from .common import Extractor, Message
 from .. import text, util
 
-BASE_PATTERN = r"(?:https?://)?(?:www\.|sfw\.)?furaffinity\.net"
+BASE_PATTERN = r"(?:https?://)?(?:www\.|sfw\.)?(?:f[ux]|f?xfu)raffinity\.net"
 
 
 class FuraffinityExtractor(Extractor):
@@ -78,14 +78,12 @@ class FuraffinityExtractor(Extractor):
 
         path = extr('href="//d', '"')
         if not path:
-            self.log.warning(
-                "Unable to download post %s (\"%s\")",
-                post_id, text.remove_html(
-                    extr('System Message', '</section>') or
-                    extr('System Message', '</table>')
-                )
-            )
-            return None
+            msg = text.remove_html(
+                extr('System Message', '</section>') or
+                extr('System Message', '</table>')
+            ).partition(" . Continue ")[0]
+            return self.log.warning(
+                "Unable to download post %s (\"%s\")", post_id, msg)
 
         pi = text.parse_int
         rh = text.remove_html
@@ -113,6 +111,12 @@ class FuraffinityExtractor(Extractor):
             data["gender"] = rh(extr('>Gender</strong>', '</div>'))
             data["width"] = pi(extr("<span>", "x"))
             data["height"] = pi(extr("", "p"))
+            data["folders"] = folders = []
+            for folder in extr(
+                    "<h3>Listed in Folders</h3>", "</section>").split("</a>"):
+                folder = rh(folder)
+                if folder:
+                    folders.append(folder)
         else:
             # old site layout
             data["title"] = text.unescape(extr("<h2>", "</h2>"))
@@ -132,11 +136,14 @@ class FuraffinityExtractor(Extractor):
             data["_description"] = extr(
                 '<td valign="top" align="left" width="70%" class="alt1" '
                 'style="padding:8px">', '                               </td>')
+            data["folders"] = ()  # folders not present in old layout
 
         data["artist_url"] = data["artist"].replace("_", "").lower()
         data["user"] = self.user or data["artist_url"]
         data["date"] = text.parse_timestamp(data["filename"].partition(".")[0])
         data["description"] = self._process_description(data["_description"])
+        data["thumbnail"] = "https://t.furaffinity.net/{}@600-{}.jpg".format(
+            post_id, path.rsplit("/", 2)[1])
 
         return data
 
@@ -172,6 +179,11 @@ class FuraffinityExtractor(Extractor):
                     break
                 self._favorite_id = text.parse_int(extr('data-fav-id="', '"'))
                 yield post_id
+
+            pos = page.find('type="submit">Next</button>')
+            if pos >= 0:
+                path = text.rextract(page, '<form action="', '"', pos)[0]
+                continue
             path = text.extr(page, 'right" href="', '"')
 
     def _pagination_search(self, query):
@@ -326,3 +338,29 @@ class FuraffinityFollowingExtractor(FuraffinityExtractor):
             if url.endswith(path):
                 return
             url = self.root + path
+
+
+class FuraffinitySubmissionsExtractor(FuraffinityExtractor):
+    """Extractor for new furaffinity submissions"""
+    subcategory = "submissions"
+    pattern = BASE_PATTERN + r"(/msg/submissions(?:/[^/?#]+)?)"
+    example = "https://www.furaffinity.net/msg/submissions"
+
+    def posts(self):
+        self.user = None
+        url = self.root + self.groups[0]
+        return self._pagination_submissions(url)
+
+    def _pagination_submissions(self, url):
+        while True:
+            page = self.request(url).text
+
+            for post_id in text.extract_iter(page, 'id="sid-', '"'):
+                yield post_id
+
+            path = (text.extr(page, '<a class="button standard more" href="', '"') or  # noqa 501
+                    text.extr(page, '<a class="more-half" href="', '"') or
+                    text.extr(page, '<a class="more" href="', '"'))
+            if not path:
+                return
+            url = self.root + text.unescape(path)

@@ -33,7 +33,7 @@ class MockDownloaderModule(Mock):
 class FakeJob():
 
     def __init__(self):
-        self.extractor = extractor.find("test:")
+        self.extractor = extractor.find("generic:https://example.org/")
         self.extractor.initialize()
         self.pathfmt = path.PathFormat(self.extractor)
         self.out = output.NullOutput()
@@ -45,11 +45,15 @@ class TestDownloaderModule(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # allow import of ytdl downloader module without youtube_dl installed
+        cls._orig_ytdl = sys.modules.get("youtube_dl")
         sys.modules["youtube_dl"] = MagicMock()
 
     @classmethod
     def tearDownClass(cls):
-        del sys.modules["youtube_dl"]
+        if cls._orig_ytdl:
+            sys.modules["youtube_dl"] = cls._orig_ytdl
+        else:
+            del sys.modules["youtube_dl"]
 
     def tearDown(self):
         downloader._cache.clear()
@@ -136,8 +140,8 @@ class TestDownloaderBase(unittest.TestCase):
 
         if content:
             mode = "w" + ("b" if isinstance(content, bytes) else "")
-            with pathfmt.open(mode) as file:
-                file.write(content)
+            with pathfmt.open(mode) as fp:
+                fp.write(content)
 
         return pathfmt
 
@@ -151,8 +155,8 @@ class TestDownloaderBase(unittest.TestCase):
 
         # test content
         mode = "r" + ("b" if isinstance(output, bytes) else "")
-        with pathfmt.open(mode) as file:
-            content = file.read()
+        with pathfmt.open(mode) as fp:
+            content = fp.read()
         self.assertEqual(content, output)
 
         # test filename extension
@@ -174,9 +178,17 @@ class TestHTTPDownloader(TestDownloaderBase):
         TestDownloaderBase.setUpClass()
         cls.downloader = downloader.find("http")(cls.job)
 
-        port = 8088
-        cls.address = "http://127.0.0.1:{}".format(port)
-        server = http.server.HTTPServer(("", port), HttpRequestHandler)
+        host = "127.0.0.1"
+        port = 0  # select random not-in-use port
+
+        try:
+            server = http.server.HTTPServer((host, port), HttpRequestHandler)
+        except OSError as exc:
+            raise unittest.SkipTest(
+                "cannot spawn local HTTP server ({})".format(exc))
+
+        host, port = server.server_address
+        cls.address = "http://{}:{}".format(host, port)
         threading.Thread(target=server.serve_forever, daemon=True).start()
 
     def _run_test(self, ext, input, output,
@@ -303,7 +315,8 @@ SAMPLES = {
     ("mp4" , b"????ftypmp4"),
     ("mp4" , b"????ftypavc1"),
     ("mp4" , b"????ftypiso3"),
-    ("mp4" , b"????ftypM4V"),
+    ("m4v" , b"????ftypM4V"),
+    ("mov" , b"????ftypqt  "),
     ("webm", b"\x1A\x45\xDF\xA3"),
     ("ogg" , b"OggS"),
     ("wav" , b"RIFF????WAVE"),

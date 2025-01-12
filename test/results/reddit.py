@@ -46,6 +46,7 @@ __tests__ = (
     "#class"   : reddit.RedditHomeExtractor,
     "#range"   : "1-20",
     "#count"   : ">= 20",
+    "#archive" : False,
 },
 
 {
@@ -168,6 +169,25 @@ __tests__ = (
 },
 
 {
+    "#url"     : "https://www.reddit.com/r/RobloxArt/comments/15ko0qu/",
+    "#comment" : "comment embeds (#5366)",
+    "#class"   : reddit.RedditSubmissionExtractor,
+    "#options" : {"comments": 10},
+    "#urls"    : (
+        "https://i.redd.it/ppt5yciyipgb1.jpg",
+        "https://i.redd.it/u0ojzd69kpgb1.png",
+    ),
+},
+
+{
+    "#url"     : "https://www.reddit.com/r/RobloxArt/comments/15ko0qu/",
+    "#comment" : "disabled comment embeds (#6357)",
+    "#class"   : reddit.RedditSubmissionExtractor,
+    "#options" : {"comments": 10, "embeds": False},
+    "#urls"    : "https://i.redd.it/ppt5yciyipgb1.jpg",
+},
+
+{
     "#url"     : "https://www.reddit.com/user/TheSpiritTree/comments/srilyf/",
     "#comment" : "user page submission (#2301)",
     "#category": ("", "reddit", "submission"),
@@ -246,6 +266,22 @@ __tests__ = (
     "#category": ("", "reddit", "redirect"),
     "#class"   : reddit.RedditRedirectExtractor,
     "#pattern" : r"^https://www\.reddit\.com/r/analog/comments/179exao/photographing_the_recent_annular_eclipse_with_a",
+},
+
+{
+    "#url"     : "https://www.reddit.com/u/Tailhook91/s/w4yAMbtOYm",
+    "#comment" : "Mobile share URL, user submission",
+    "#category": ("", "reddit", "redirect"),
+    "#class"   : reddit.RedditRedirectExtractor,
+    "#pattern" : r"^https://www.reddit.com/user/Tailhook91/comments/znfxbr/prove_it/",
+},
+
+{
+    "#url"     : "https://www.reddit.com/user/Tailhook91/s/w4yAMbtOYm",
+    "#comment" : "Mobile share URL, user submission",
+    "#category": ("", "reddit", "redirect"),
+    "#class"   : reddit.RedditRedirectExtractor,
+    "#pattern" : r"^https://www.reddit.com/user/Tailhook91/comments/znfxbr/prove_it/",
 },
 
 )
