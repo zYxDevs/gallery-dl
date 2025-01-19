@@ -65,6 +65,44 @@ __tests__ = (
 },
 
 {
+    "#url"     : "https://www.artstation.com/mikf/collections/2647023",
+    "#category": ("", "artstation", "collection"),
+    "#class"   : artstation.ArtstationCollectionExtractor,
+    "#count"   : 10,
+
+    "collection": {
+        "id"            : 2647023,
+        "is_private"    : False,
+        "name"          : "テスト",
+        "projects_count": 3,
+        "user_id"       : 697975,
+        "active_projects_count" : 3,
+        "micro_square_image_url": "https://cdna.artstation.com/p/assets/images/images/005/131/434/micro_square/gaeri-kim-cat-front.jpg?1488720625",
+        "small_square_image_url": "https://cdna.artstation.com/p/assets/images/images/005/131/434/small_square/gaeri-kim-cat-front.jpg?1488720625",
+    },
+    "user": "mikf",
+},
+
+{
+    "#url"     : "https://www.artstation.com/mikf/collections",
+    "#category": ("", "artstation", "collections"),
+    "#class"   : artstation.ArtstationCollectionsExtractor,
+    "#urls"    : (
+        "https://www.artstation.com/mikf/collections/2647023",
+        "https://www.artstation.com/mikf/collections/2647719",
+    ),
+
+    "id"            : range(2647023, 2647719),
+    "is_private"    : False,
+    "name"          : r"re:テスト|empty",
+    "projects_count": int,
+    "user_id"       : 697975,
+    "active_projects_count" : int,
+    "micro_square_image_url": str,
+    "small_square_image_url": str,
+},
+
+{
     "#url"     : "https://www.artstation.com/sungchoi/likes",
     "#comment" : "no likes",
     "#category": ("", "artstation", "likes"),
@@ -116,6 +154,19 @@ __tests__ = (
     "#category": ("", "artstation", "image"),
     "#class"   : artstation.ArtstationImageExtractor,
     "#count"   : 4,
+},
+
+{
+    "#url"     : "https://www.artstation.com/artwork/lR8b5k",
+    "#comment" : "artstation video clips (#2566)",
+    "#category": ("", "artstation", "image"),
+    "#class"   : artstation.ArtstationImageExtractor,
+    "#options" : {"videos": True},
+    "#range"   : "2-3",
+    "#urls"    : (
+        "https://cdn.artstation.com/p/video_sources/000/819/843/infection-4.mp4",
+        "https://cdn.artstation.com/p/video_sources/000/819/725/infection-veinonly-2.mp4",
+    ),
 },
 
 {

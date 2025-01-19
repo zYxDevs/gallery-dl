@@ -29,10 +29,11 @@ __tests__ = (
 },
 
 {
-    "#url"     : "https://www.hentai-foundry.com/pictures/user/Evulchibi/scraps",
+    "#url"     : "https://www.hentai-foundry.com/pictures/user/Ethevian/scraps",
     "#category": ("", "hentaifoundry", "scraps"),
     "#class"   : hentaifoundry.HentaifoundryScrapsExtractor,
-    "#sha1_url": "7cd9c6ec6258c4ab8c44991f7731be82337492a7",
+    "#pattern" : r"https://pictures\.hentai-foundry\.com/e/Ethevian/.+",
+    "#count"   : ">= 10",
 },
 
 {
@@ -55,11 +56,23 @@ __tests__ = (
 },
 
 {
+    "#url"     : "https://www.hentai-foundry.com/pictures/tagged/kancolle",
+    "#category": ("", "hentaifoundry", "tag"),
+    "#class"   : hentaifoundry.HentaifoundryTagExtractor,
+    "#pattern" : r"https://pictures.hentai-foundry.com/[^/]/[^/?#]+/\d+/",
+    "#range"   : "20-30",
+
+    "search_tags": "kancolle",
+},
+
+{
     "#url"     : "https://www.hentai-foundry.com/pictures/recent/2018-09-20",
     "#category": ("", "hentaifoundry", "recent"),
     "#class"   : hentaifoundry.HentaifoundryRecentExtractor,
     "#pattern" : r"https://pictures.hentai-foundry.com/[^/]/[^/?#]+/\d+/",
     "#range"   : "20-30",
+
+    "date": "2018-09-20",
 },
 
 {

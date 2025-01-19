@@ -16,7 +16,7 @@ import collections
 import re
 
 BASE_PATTERN = r"(?:https?://)?" \
-    r"(?:(?:chan|beta|black|white)\.sankakucomplex\.com|sankaku\.app)" \
+    r"(?:(?:chan|www|beta|black|white)\.sankakucomplex\.com|sankaku\.app)" \
     r"(?:/[a-z]{2})?"
 
 
@@ -45,6 +45,9 @@ class SankakuExtractor(BooruExtractor):
     def skip(self, num):
         return 0
 
+    def _init(self):
+        self.api = SankakuAPI(self)
+
     def _file_url(self, post):
         url = post["file_url"]
         if not url:
@@ -63,7 +66,8 @@ class SankakuExtractor(BooruExtractor):
     def _prepare(self, post):
         post["created_at"] = post["created_at"]["s"]
         post["date"] = text.parse_timestamp(post["created_at"])
-        post["tags"] = [tag["name"] for tag in post["tags"] if tag["name"]]
+        post["tags"] = [tag["name"].lower().replace(" ", "_")
+                        for tag in post["tags"] if tag["name"]]
         post["tag_string"] = " ".join(post["tags"])
         post["_http_validate"] = self._check_expired
 
@@ -72,14 +76,24 @@ class SankakuExtractor(BooruExtractor):
 
     def _tags(self, post, page):
         tags = collections.defaultdict(list)
-        types = self.TAG_TYPES
         for tag in post["tags"]:
             name = tag["name"]
             if name:
-                tags[types[tag["type"]]].append(name)
-        for key, value in tags.items():
-            post["tags_" + key] = value
-            post["tag_string_" + key] = " ".join(value)
+                tags[tag["type"]].append(name.lower().replace(" ", "_"))
+        types = self.TAG_TYPES
+        for type, values in tags.items():
+            name = types[type]
+            post["tags_" + name] = values
+            post["tag_string_" + name] = " ".join(values)
+
+    def _notes(self, post, page):
+        if post.get("has_notes"):
+            post["notes"] = self.api.notes(post["id"])
+            for note in post["notes"]:
+                note["created_at"] = note["created_at"]["s"]
+                note["updated_at"] = note["updated_at"]["s"]
+        else:
+            post["notes"] = ()
 
 
 class SankakuTagExtractor(SankakuExtractor):
@@ -109,7 +123,7 @@ class SankakuTagExtractor(SankakuExtractor):
 
     def posts(self):
         params = {"tags": self.tags}
-        return SankakuAPI(self).posts_keyset(params)
+        return self.api.posts_keyset(params)
 
 
 class SankakuPoolExtractor(SankakuExtractor):
@@ -117,7 +131,7 @@ class SankakuPoolExtractor(SankakuExtractor):
     subcategory = "pool"
     directory_fmt = ("{category}", "pool", "{pool[id]} {pool[name_en]}")
     archive_fmt = "p_{pool}_{id}"
-    pattern = BASE_PATTERN + r"/(?:books|pools?/show)/(\d+)"
+    pattern = BASE_PATTERN + r"/(?:books|pools?/show)/(\w+)"
     example = "https://sankaku.app/books/12345"
 
     def __init__(self, match):
@@ -125,7 +139,7 @@ class SankakuPoolExtractor(SankakuExtractor):
         self.pool_id = match.group(1)
 
     def metadata(self):
-        pool = SankakuAPI(self).pools(self.pool_id)
+        pool = self.api.pools(self.pool_id)
         pool["tags"] = [tag["name"] for tag in pool["tags"]]
         pool["artist_tags"] = [tag["name"] for tag in pool["artist_tags"]]
 
@@ -151,7 +165,7 @@ class SankakuPostExtractor(SankakuExtractor):
         self.post_id = match.group(1)
 
     def posts(self):
-        return SankakuAPI(self).posts(self.post_id)
+        return self.api.posts(self.post_id)
 
 
 class SankakuBooksExtractor(SankakuExtractor):
@@ -167,7 +181,7 @@ class SankakuBooksExtractor(SankakuExtractor):
 
     def items(self):
         params = {"tags": self.tags, "pool_type": "0"}
-        for pool in SankakuAPI(self).pools_keyset(params):
+        for pool in self.api.pools_keyset(params):
             pool["_extractor"] = SankakuPoolExtractor
             url = "https://sankaku.app/books/{}".format(pool["id"])
             yield Message.Queue, url, pool
@@ -191,6 +205,10 @@ class SankakuAPI():
         self.username, self.password = extractor._get_auth_info()
         if not self.username:
             self.authenticate = util.noop
+
+    def notes(self, post_id):
+        params = {"lang": "en"}
+        return self._call("/posts/{}/notes".format(post_id), params)
 
     def pools(self, pool_id):
         params = {"lang": "en"}

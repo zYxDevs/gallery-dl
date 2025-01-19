@@ -52,22 +52,21 @@ class RedgifsExtractor(Extractor):
 
             gif.update(metadata)
             gif["count"] = cnt
+            gif["date"] = text.parse_timestamp(gif.get("createDate"))
             yield Message.Directory, gif
 
             for num, gif in enumerate(gifs, enum):
-                url = self._process(gif)
+                gif["_fallback"] = formats = self._formats(gif)
+                url = next(formats, None)
+
                 if not url:
                     self.log.warning(
                         "Skipping '%s' (format not available)", gif["id"])
                     continue
+
                 gif["num"] = num
                 gif["count"] = cnt
                 yield Message.Url, url, gif
-
-    def _process(self, gif):
-        gif["_fallback"] = formats = self._formats(gif)
-        gif["date"] = text.parse_timestamp(gif.get("createDate"))
-        return next(formats, None)
 
     def _formats(self, gif):
         urls = gif["urls"]
@@ -191,7 +190,7 @@ class RedgifsImageExtractor(RedgifsExtractor):
                r"(?:\w+\.)?redgifs\.com/(?:watch|ifr)|"
                r"(?:\w+\.)?gfycat\.com(?:/gifs/detail|/\w+)?|"
                r"(?:www\.)?gifdeliverynetwork\.com|"
-               r"i\.redgifs\.com/i)/([A-Za-z]+)")
+               r"i\.redgifs\.com/i)/([A-Za-z0-9]+)")
     example = "https://redgifs.com/watch/ID"
 
     def gifs(self):

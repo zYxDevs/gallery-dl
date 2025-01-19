@@ -44,11 +44,36 @@ __tests__ = (
     "tag_ids"         : list,
     "tags"            : list,
     "thumbnails_generated": True,
-    "updated_at"      : "2023-12-25T06:58:33.986Z",
+    "updated_at"      : str,
     "upvotes"         : int,
     "view_url"        : "https://cdn.twibooru.org/img/2020/7/8/1/full.png",
     "width"           : 576,
     "wilson_score"    : float,
+},
+
+{
+    "#url"     : "https://twibooru.org/523964",
+    "#comment" : "svg (#5643)",
+    "#category": ("philomena", "twibooru", "post"),
+    "#class"   : twibooru.TwibooruPostExtractor,
+    "#urls"        : "https://cdn.twibooru.org/img/2020/7/13/523964/full.svg",
+    "#sha1_content": "15590fe151ff65ef767b409e46dfdf708b339f4d",
+
+    "extension": "svg",
+    "format"   : "svg",
+},
+
+{
+    "#url"     : "https://twibooru.org/523964",
+    "#comment" : "svg (#5643)",
+    "#category": ("philomena", "twibooru", "post"),
+    "#class"   : twibooru.TwibooruPostExtractor,
+    "#options" : {"svg": False},
+    "#urls"        : "https://cdn.twibooru.org/img/2020/7/13/523964/full.png",
+    "#sha1_content": "f8ff78e6a929a024f8529199f9a600617898d03c",
+
+    "extension": "png",
+    "format"   : "svg",
 },
 
 {
