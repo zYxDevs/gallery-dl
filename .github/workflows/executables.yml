@@ -17,7 +17,6 @@ jobs:
       run:
         shell: bash
     outputs:
-      SHA: ${{ steps.out.outputs.SHA }}
       MSG: ${{ steps.out.outputs.MSG }}
 
     strategy:
@@ -51,9 +50,8 @@ jobs:
     - name: Output Values
       id: out
       run: |
-        echo "SHA=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
         echo "MSG<<EOF" >> "$GITHUB_OUTPUT"
-        printf '%s\n' "$(git show -s --format=%s HEAD)" >> "$GITHUB_OUTPUT"
+        printf '%s\n' "$(python ./scripts/fmt.py)" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
 
     - name: Environment Variables
@@ -106,10 +104,9 @@ jobs:
 
     - name: Body
       env:
-        SHA: ${{ needs.build.outputs.SHA }}
         MSG: ${{ needs.build.outputs.MSG }}
       run: |
-        printf '[`%s`](https://codeberg.org/mikf/gallery-dl/commit/%s) %s' "${SHA::8}" "$SHA" "$MSG" > body.md
+        printf '%s' "$MSG" > body.md
 
     - uses: ncipollo/release-action@v1
       with:
