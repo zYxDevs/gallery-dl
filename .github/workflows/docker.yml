@@ -22,9 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Clone repo
-      run: |
-        git clone --depth 1 --no-tags https://codeberg.org/mikf/gallery-dl.git .
+    - uses: gdl-org/clone@c54f55c32557e4755f08232bdb8a60f94a26fbdd  # v1.0.0
 
     - uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf  # v6.0.0
       id: metadata
